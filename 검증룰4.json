@@ -1,0 +1,36 @@
+{
+  "version": "2026-06-18",
+  "category": "normal_structure_protection",
+  "description": "정상 구조 보호 규칙",
+  "rules": [
+    {
+      "rule_id": "PROTECT-001",
+      "level": "INFO",
+      "title": "노팁 + 가이드/기사 경비 포함은 정상",
+      "api_fields": [
+        "GetProductDetailInfo.result.includedNote",
+        "GetProductDetailInfo.result.unincludedNote",
+        "GetProductDetailInfo.result.productName"
+      ],
+      "logic": "노팁 문구와 포함사항의 가이드/기사/현지의무경비 포함은 충돌이 아니다."
+    },
+    {
+      "rule_id": "PROTECT-002",
+      "level": "INFO",
+      "title": "매너팁은 노팁 판정에서 제외",
+      "api_fields": [
+        "GetProductDetailInfo.result.unincludedNote"
+      ],
+      "logic": "매너팁, 포터팁, 호텔팁, 마사지팁, 자율팁은 오류 생성 근거로 쓰지 않는다."
+    },
+    {
+      "rule_id": "PROTECT-003",
+      "level": "INFO",
+      "title": "유의 ㅣ 안내사항 단독 오류 금지",
+      "api_fields": [
+        "GetScheduleList.result.scheduleItemList[].ortherActions[].itiServiceName"
+      ],
+      "logic": "실제 원문 데이터에 존재하는 안내 라벨이므로 단독으로 오탈자 오류를 만들지 않는다."
+    }
+  ]
+}

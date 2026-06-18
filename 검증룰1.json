@@ -1,0 +1,60 @@
+{
+  "version": "2026-06-18",
+  "category": "title_period_air",
+  "description": "제목, 기간, 직항/노쇼핑/노옵션/노팁 문구와 실제 API 값의 충돌 검수",
+  "rules": [
+    {
+      "rule_id": "TITLE-001",
+      "level": "ERROR",
+      "title": "제목 박수/일수 불일치",
+      "api_fields": [
+        "GetPackageInfo.result.date.night",
+        "GetPackageInfo.result.date.days",
+        "GetProductDetailInfo.result.productName"
+      ],
+      "logic": "제목의 N박 M일 패턴이 API의 nights/days와 다르면 오류"
+    },
+    {
+      "rule_id": "TITLE-002",
+      "level": "ERROR",
+      "title": "노쇼핑 문구 불일치",
+      "api_fields": [
+        "GetPackageInfo.result.shoppingCount",
+        "GetProductDetailInfo.result.shoppingTimes",
+        "GetProductDetailInfo.result.productName"
+      ],
+      "logic": "제목에 노쇼핑이 있으나 쇼핑 횟수가 1 이상이면 오류"
+    },
+    {
+      "rule_id": "TITLE-003",
+      "level": "ERROR",
+      "title": "노옵션 문구 불일치",
+      "api_fields": [
+        "GetProductDetailInfo.result.optionalTourOrNot",
+        "GetProductDetailInfo.result.productName"
+      ],
+      "logic": "제목에 노옵션, NO옵션 이 있으나 optionalTourOrNot=Y 이면 오류"
+    },
+    {
+      "rule_id": "TITLE-004",
+      "level": "ERROR",
+      "title": "노팁 문구 불일치",
+      "api_fields": [
+        "GetProductDetailInfo.result.includedNote",
+        "GetProductDetailInfo.result.unincludedNote",
+        "GetProductDetailInfo.result.productName"
+      ],
+      "logic": "제목에 노팁, NO팁, NO기사가이드경비, 있는데 포함사항에는 가이드/기사/현지필수경비 포함이 없고 불포함사항에 의무 경비가 있으면 오류. 매너팁, 식당팁, 마사지팁 등 전체 매너팁은 제외한다."
+    },
+    {
+      "rule_id": "AIR-001",
+      "level": "ERROR",
+      "title": "직항 문구 불일치",
+      "api_fields": [
+        "GetProductDetailInfo.result.directFlightOrNot",
+        "GetProductDetailInfo.result.productName"
+      ],
+      "logic": "제목에 직항이 있으나 directFlightOrNot=N 이면 오류"
+    }
+  ]
+}
