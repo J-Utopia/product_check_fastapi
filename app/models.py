@@ -126,6 +126,8 @@ class NormalizedProduct(BaseModel):
     leader_status: str | None = None
     guide_info: list[dict[str, Any]] = Field(default_factory=list)
     flight_remarks: list[FlightRemark] = Field(default_factory=list)
+    coupon_count: int = 0
+    coupon_titles: list[str] = Field(default_factory=list)
     hotels: list[HotelStay] = Field(default_factory=list)
     schedule_days: list[DaySchedule] = Field(default_factory=list)
 

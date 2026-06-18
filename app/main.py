@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from .auth import HeaderCaptureError
 from .client import ModeTourApiError
 from .config import settings
-from .models import RunItineraryRequest
+from .models import InspectionEnvelope, RunItineraryRequest
 from .service import build_default_service
 
 logging.basicConfig(level=logging.INFO)
@@ -47,7 +47,7 @@ def openapi_json() -> dict[str, object]:
     return app.openapi()
 
 
-@app.post("/run-itinerary")
+@app.post("/run-itinerary", response_model=InspectionEnvelope)
 def run_itinerary(request: RunItineraryRequest) -> JSONResponse:
     try:
         service = build_default_service(settings)

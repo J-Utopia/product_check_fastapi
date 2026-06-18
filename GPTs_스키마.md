@@ -1,23 +1,25 @@
-# GPTs 스키마
+# GPTs Action 스키마
+
+아래 스키마는 `https://product-check-fastapi.onrender.com` 기준이다.
 
 ```json
 {
   "openapi": "3.1.0",
   "info": {
     "title": "Modetour Itinerary Inspection API",
-    "version": "2.1.0",
-    "description": "단체번호 입력 시 현재 기준 모두투어 일정표 API를 호출해 정규화와 검수를 수행한다. 단체번호가 있으면 반드시 이 API를 호출해야 한다."
+    "version": "2.0.0",
+    "description": "모두투어 단체번호를 입력받아 일정표 검수 결과를 반환하는 API"
   },
   "servers": [
     {
-      "url": "https://your-fastapi-host.example.com"
+      "url": "https://product-check-fastapi.onrender.com"
     }
   ],
   "paths": {
     "/run-itinerary": {
       "post": {
         "operationId": "runItinerary",
-        "summary": "단체번호로 일정표 검수를 실행한다.",
+        "summary": "단체번호로 일정표 검수를 실행한다",
         "requestBody": {
           "required": true,
           "content": {
@@ -28,7 +30,7 @@
                 "properties": {
                   "group_id": {
                     "type": "string",
-                    "description": "사용자가 입력한 단체번호(productNo)"
+                    "description": "모두투어 단체번호(productNo)"
                   }
                 },
                 "required": ["group_id"]
@@ -38,7 +40,7 @@
         },
         "responses": {
           "200": {
-            "description": "검수 실행 결과",
+            "description": "검수 성공",
             "content": {
               "application/json": {
                 "schema": {
@@ -53,17 +55,17 @@
                       "type": ["object", "null"],
                       "properties": {
                         "summary": { "type": "string" },
-                        "normalized": {
-                          "type": "object",
-                          "description": "GetPackageInfo, GetScheduleList, GetProductDetailInfo, GetHotelList, GetFlightRemarkList, GetProductKeyPointInfo, GetPackageCouponList를 통합한 정규화 결과"
-                        },
+                        "normalized": { "type": "object" },
                         "issues": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
                               "rule_id": { "type": "string" },
-                              "level": { "type": "string", "enum": ["FATAL", "ERROR", "WARN", "INFO"] },
+                              "level": {
+                                "type": "string",
+                                "enum": ["FATAL", "ERROR", "WARN", "INFO"]
+                              },
                               "title": { "type": "string" },
                               "message": { "type": "string" },
                               "evidence": { "type": "array" },
@@ -91,3 +93,9 @@
   }
 }
 ```
+
+## 핵심
+
+- GPTs는 `group_id`만 보내고, FastAPI가 검수용 핵심 데이터를 정리해서 돌려준다.
+- GPTs는 그 응답과 `검증룰1~5.json`을 비교해 최종 판정을 만든다.
+- `servers.url`은 반드시 실제 Render 주소를 쓴다.

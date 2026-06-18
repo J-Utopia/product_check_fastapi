@@ -17,6 +17,7 @@ class Settings:
     capture_timeout_ms: int = int(os.getenv("MODETOUR_CAPTURE_TIMEOUT_MS", "60000"))
     capture_wait_ms: int = int(os.getenv("MODETOUR_CAPTURE_WAIT_MS", "1200"))
     header_cache_path: Path = Path(os.getenv("MODETOUR_HEADER_CACHE_PATH", str(BASE_DIR / ".cache" / "modetour_headers.json")))
+    header_cache_json: str = os.getenv("MODETOUR_HEADER_CACHE_JSON", "")
     modewebapireqheader: str = os.getenv("MODETOUR_MODEWEBAPIREQHEADER", "")
     x_platform: str = os.getenv("MODETOUR_X_PLATFORM", "WEB")
     x_salespartner: str = os.getenv("MODETOUR_X_SALESPARTNER", "false")

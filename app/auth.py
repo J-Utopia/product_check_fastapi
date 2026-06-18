@@ -30,6 +30,16 @@ def _build_env_headers(settings: Settings) -> dict[str, str] | None:
 
 
 def _load_cached_headers(settings: Settings) -> dict[str, str] | None:
+    if settings.header_cache_json.strip():
+        try:
+            data = json.loads(settings.header_cache_json)
+        except Exception:
+            data = None
+        if isinstance(data, dict):
+            required = ("accept", "referer", "user-agent", "x-platform", "x-salespartner", "x-username", "x-userid", "x-userdepartment", "modewebapireqheader")
+            if all(str(data.get(key, "")).strip() for key in required):
+                return {key: str(data[key]) for key in required}
+
     cache_path = settings.header_cache_path
     if not cache_path.exists():
         return None

@@ -63,6 +63,7 @@ class InspectionService:
                     "hotels": len(normalized.key_point_hotels),
                     "meals": len(normalized.key_point_meals),
                 },
+                "coupon_count": normalized.coupon_count,
             },
             result=InspectionPayload(
                 summary=summary,
