@@ -17,6 +17,9 @@ app = FastAPI(
     title="Modetour Itinerary Inspection API",
     version="2.0.0",
     description="현재 기준 모두투어 일정표 검수용 FastAPI",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url=None,
 )
 
 
@@ -37,6 +40,11 @@ def index() -> dict[str, object]:
             "openapi": "/openapi.json",
         },
     }
+
+
+@app.get("/openapi.json")
+def openapi_json() -> dict[str, object]:
+    return app.openapi()
 
 
 @app.post("/run-itinerary")
