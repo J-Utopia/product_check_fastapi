@@ -8,6 +8,26 @@ from .config import Settings
 
 logger = logging.getLogger(__name__)
 
+HEADER_KEYS = (
+    "accept",
+    "referer",
+    "user-agent",
+    "x-platform",
+    "x-salespartner",
+    "x-username",
+    "x-userid",
+    "x-userdepartment",
+    "modewebapireqheader",
+)
+REQUIRED_HEADER_KEYS = (
+    "accept",
+    "referer",
+    "user-agent",
+    "x-platform",
+    "x-salespartner",
+    "modewebapireqheader",
+)
+
 
 class HeaderCaptureError(RuntimeError):
     """Raised when required ModeTour request headers cannot be created."""
@@ -36,9 +56,8 @@ def _load_cached_headers(settings: Settings) -> dict[str, str] | None:
         except Exception:
             data = None
         if isinstance(data, dict):
-            required = ("accept", "referer", "user-agent", "x-platform", "x-salespartner", "x-username", "x-userid", "x-userdepartment", "modewebapireqheader")
-            if all(str(data.get(key, "")).strip() for key in required):
-                return {key: str(data[key]) for key in required}
+            if all(str(data.get(key, "")).strip() for key in REQUIRED_HEADER_KEYS):
+                return {key: str(data.get(key, "")) for key in HEADER_KEYS}
 
     cache_path = settings.header_cache_path
     if not cache_path.exists():
@@ -49,10 +68,9 @@ def _load_cached_headers(settings: Settings) -> dict[str, str] | None:
         return None
     if not isinstance(data, dict):
         return None
-    required = ("accept", "referer", "user-agent", "x-platform", "x-salespartner", "x-username", "x-userid", "x-userdepartment", "modewebapireqheader")
-    if any(not str(data.get(key, "")).strip() for key in required):
+    if any(not str(data.get(key, "")).strip() for key in REQUIRED_HEADER_KEYS):
         return None
-    return {key: str(data[key]) for key in required}
+    return {key: str(data.get(key, "")) for key in HEADER_KEYS}
 
 
 def _save_cached_headers(settings: Settings, headers: dict[str, str]) -> None:

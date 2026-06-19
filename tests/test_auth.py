@@ -20,3 +20,19 @@ def test_capture_headers_from_cache_json() -> None:
     }
     settings = Settings(header_cache_json=json.dumps(headers))
     assert capture_base_headers(settings) == headers
+
+
+def test_capture_headers_accepts_blank_optional_fields() -> None:
+    headers = {
+        "accept": "application/json",
+        "referer": "https://www.modetour.com/",
+        "user-agent": "Mozilla/5.0",
+        "x-platform": "WEB",
+        "x-salespartner": "false",
+        "x-username": "",
+        "x-userid": "",
+        "x-userdepartment": "",
+        "modewebapireqheader": "encoded-header",
+    }
+    settings = Settings(header_cache_json=json.dumps(headers))
+    assert capture_base_headers(settings) == headers
