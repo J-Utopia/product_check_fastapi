@@ -6,8 +6,8 @@ from app.models import DaySchedule, FlightSegment, NormalizedProduct
 def build_product(**overrides: object) -> NormalizedProduct:
     base = NormalizedProduct(
         product_no="105195679",
-        product_name="[출발확정] 테스트 상품 4박 5일",
-        title="[출발확정] 테스트 상품 4박 5일",
+        product_name="[출발확정] 테스트상품 4박 5일",
+        title="[출발확정] 테스트상품 4박 5일",
         departure_date="2026-06-20",
         arrival_date="2026-06-24",
         nights=4,
@@ -45,7 +45,7 @@ def build_product(**overrides: object) -> NormalizedProduct:
         ],
         shopping_count=0,
         optional_tour_or_not="N",
-        special_benefits=["상해 특급 투어"],
+        special_benefits=["상해 야경 투어"],
         schedule_days=[
             DaySchedule(day_no=1, date="2026-06-20T00:00:00"),
             DaySchedule(day_no=2, date="2026-06-21T00:00:00"),

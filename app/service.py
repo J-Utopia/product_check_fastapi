@@ -44,6 +44,7 @@ class InspectionService:
                 meta={"missing_fields": missing},
                 result=None,
             )
+
         validation = self._rule_engine.validate(normalized)
         summary = self._build_summary(normalized)
         return InspectionEnvelope(
@@ -91,6 +92,7 @@ class InspectionService:
             else "기간 정보 확인 필요"
         )
         route = ", ".join(product.city_names[:4]) if product.city_names else ", ".join(product.country_names)
+
         flags: list[str] = []
         if product.shopping_count is not None:
             flags.append(f"쇼핑 {product.shopping_count}회")
@@ -98,8 +100,9 @@ class InspectionService:
             flags.append(f"선택관광 {'있음' if product.optional_tour_or_not == 'Y' else '없음'}")
         if product.direct_flight is not None:
             flags.append(f"{'직항' if product.direct_flight else '경유'} 항공")
+
         badge_text = ", ".join(product.top_badges[:4]) if product.top_badges else ""
-        summary = f"{product.product_name}\n{period}\n주요 이동/방문 흐름: {route}"
+        summary = f"{product.product_name}\n{period}\n주요 이동/방문 도시: {route}"
         if badge_text:
             summary += f"\n상단 배지: {badge_text}"
         if flags:

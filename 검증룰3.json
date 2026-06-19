@@ -1,7 +1,7 @@
 {
-  "version": "2026-06-18",
+  "version": "2026-06-19",
   "category": "hotel_meeting_guide",
-  "description": "숙박, 미팅, 가이드 관련 교차검증",
+  "description": "숙박, 미팅, 가이드 관련 핵심 연결성을 검증한다.",
   "rules": [
     {
       "rule_id": "HOTEL-001",
@@ -11,7 +11,7 @@
         "GetPackageInfo.result.date.night",
         "GetHotelList.result[].first"
       ],
-      "logic": "호텔 API에 나타난 숙박 일차 수가 상품 박수와 다르면 경고. 기내박/야간이동 예외를 고려한다."
+      "logic": "호텔 API에서 확인되는 숙박 일차 수가 상품 박수와 다르면 경고다. 기내박, 야간이동 예외는 별도 판단한다."
     },
     {
       "rule_id": "MEETING-001",
@@ -21,7 +21,7 @@
         "GetProductDetailInfo.result.meetingTime",
         "GetProductDetailInfo.result.meetingPlace2"
       ],
-      "logic": "미팅 장소 안내는 있는데 meetingTime이 비어 있으면 경고"
+      "logic": "미팅 장소 안내가 있는데 meetingTime 이 비어 있으면 경고다."
     },
     {
       "rule_id": "GUIDE-001",
@@ -31,7 +31,7 @@
         "GetPackageInfo.result.guideYn",
         "GetProductKeyPointInfo.result.leaderGuildStatus"
       ],
-      "logic": "guideYn=Y 인데 핵심포인트 가이드 상태가 없음이면 경고"
+      "logic": "guideYn=Y 인데 핵심포인트나 상품 정보에 가이드 상태가 전혀 드러나지 않으면 경고다."
     }
   ]
 }

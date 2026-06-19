@@ -8,7 +8,7 @@
   "info": {
     "title": "Modetour Itinerary Inspection API",
     "version": "2.0.0",
-    "description": "모두투어 단체번호를 입력받아 일정표 검수 결과를 반환하는 API"
+    "description": "모두투어 단체번호를 입력받아 일정표 검수용 데이터를 반환하는 API"
   },
   "servers": [
     {
@@ -19,7 +19,7 @@
     "/run-itinerary": {
       "post": {
         "operationId": "runItinerary",
-        "summary": "단체번호로 일정표 검수를 실행한다",
+        "summary": "단체번호로 일정표 검수 데이터를 조회한다",
         "requestBody": {
           "required": true,
           "content": {
@@ -40,44 +40,74 @@
         },
         "responses": {
           "200": {
-            "description": "검수 성공",
+            "description": "검수 데이터 조회 성공",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string" },
-                    "code": { "type": "string" },
-                    "message": { "type": "string" },
-                    "group_id": { "type": "string" },
-                    "meta": { "type": "object" },
+                    "status": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "group_id": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "type": "object"
+                    },
                     "result": {
                       "type": ["object", "null"],
                       "properties": {
-                        "summary": { "type": "string" },
-                        "normalized": { "type": "object" },
+                        "summary": {
+                          "type": "string"
+                        },
+                        "normalized": {
+                          "type": "object"
+                        },
                         "issues": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
-                              "rule_id": { "type": "string" },
+                              "rule_id": {
+                                "type": "string"
+                              },
                               "level": {
                                 "type": "string",
                                 "enum": ["FATAL", "ERROR", "WARN", "INFO"]
                               },
-                              "title": { "type": "string" },
-                              "message": { "type": "string" },
-                              "evidence": { "type": "array" },
-                              "suggestion": { "type": "string" }
+                              "title": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "evidence": {
+                                "type": "array"
+                              },
+                              "suggestion": {
+                                "type": "string"
+                              }
                             }
                           }
                         },
                         "quality": {
                           "type": "object",
                           "properties": {
-                            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
-                            "grade": { "type": "string" }
+                            "score": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100
+                            },
+                            "grade": {
+                              "type": "string"
+                            }
                           }
                         }
                       }
@@ -94,8 +124,9 @@
 }
 ```
 
-## 핵심
+## 사용 메모
 
-- GPTs는 `group_id`만 보내고, FastAPI가 검수용 핵심 데이터를 정리해서 돌려준다.
-- GPTs는 그 응답과 `검증룰1~5.json`을 비교해 최종 판정을 만든다.
-- `servers.url`은 반드시 실제 Render 주소를 쓴다.
+- GPTs는 `group_id`만 보내고, FastAPI가 검수용 정규화 데이터를 반환한다.
+- GPTs는 `result.issues`를 그대로 복사하지 말고, `normalized`와 `summary`를 함께 보고 근거를 재정리한다.
+- `quality.score`는 참고값으로 사용하되, 최종 설명은 반드시 근거 중심으로 작성한다.
+- `servers.url`은 실제 Render 배포 주소와 일치해야 한다.

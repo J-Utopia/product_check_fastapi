@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.service import InspectionService
+from tests.conftest import build_product
 
 
 class StubClient:
@@ -24,3 +25,10 @@ def test_service_returns_data_failure_for_missing_required_fields() -> None:
     envelope = InspectionService(StubClient(payload)).run("105195679")
     assert envelope.code == "DATA_FAILURE"
     assert envelope.result is None
+
+
+def test_service_builds_summary_for_normalized_product() -> None:
+    service = InspectionService(StubClient({}))
+    summary = service._build_summary(build_product())
+    assert "2026-06-20 출발, 4박 5일" in summary
+    assert "직항 항공" in summary

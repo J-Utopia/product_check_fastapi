@@ -1,7 +1,7 @@
 {
-  "version": "2026-06-18",
+  "version": "2026-06-19",
   "category": "schedule_period",
-  "description": "상품 일수와 실제 일정표 일차 수 비교",
+  "description": "상품 일수와 실제 일정 일차 수, 날짜 연속성을 검증한다.",
   "rules": [
     {
       "rule_id": "PERIOD-001",
@@ -11,7 +11,7 @@
         "GetPackageInfo.result.date.days",
         "GetScheduleList.result.scheduleItemList[].first"
       ],
-      "logic": "상품 일수와 scheduleItemList의 일차 수가 다르면 오류"
+      "logic": "상품 일수와 scheduleItemList의 실제 일차 수가 다르면 오류다."
     },
     {
       "rule_id": "PERIOD-002",
@@ -20,7 +20,7 @@
       "api_fields": [
         "GetScheduleList.result.scheduleItemList[].date"
       ],
-      "logic": "일차 날짜가 하루씩 증가하지 않으면 경고"
+      "logic": "일차 날짜가 순차적으로 증가하지 않으면 경고다."
     }
   ]
 }

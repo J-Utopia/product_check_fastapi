@@ -1,36 +1,36 @@
 {
-  "version": "2026-06-18",
+  "version": "2026-06-19",
   "category": "normal_structure_protection",
-  "description": "정상 구조 보호 규칙",
+  "description": "정상 케이스를 과검출하지 않기 위한 보호 규칙이다.",
   "rules": [
     {
       "rule_id": "PROTECT-001",
       "level": "INFO",
-      "title": "노팁 + 가이드/기사 경비 포함은 정상",
+      "title": "노팁과 선택성 팁은 구분",
       "api_fields": [
         "GetProductDetailInfo.result.includedNote",
         "GetProductDetailInfo.result.unincludedNote",
         "GetProductDetailInfo.result.productName"
       ],
-      "logic": "노팁 문구와 포함사항의 가이드/기사/현지의무경비 포함은 충돌이 아니다."
+      "logic": "노팁 문구가 있어도 매너팁, 객실팁, 마사지팁 같은 선택성 팁은 자동 충돌로 보지 않는다."
     },
     {
       "rule_id": "PROTECT-002",
       "level": "INFO",
-      "title": "매너팁은 노팁 판정에서 제외",
+      "title": "부가 안내는 본문 오타로 단정 금지",
       "api_fields": [
-        "GetProductDetailInfo.result.unincludedNote"
+        "GetFlightRemarkList.result[].remark"
       ],
-      "logic": "매너팁, 포터팁, 호텔팁, 마사지팁, 자율팁은 오류 생성 근거로 쓰지 않는다."
+      "logic": "항공 remark, 보험, 마일리지, 일반 유의사항은 본문 일정 오타와 분리해서 다룬다."
     },
     {
       "rule_id": "PROTECT-003",
       "level": "INFO",
-      "title": "유의 ㅣ 안내사항 단독 오류 금지",
+      "title": "주의사항 영역 과검출 금지",
       "api_fields": [
         "GetScheduleList.result.scheduleItemList[].ortherActions[].itiServiceName"
       ],
-      "logic": "실제 원문 데이터에 존재하는 안내 라벨이므로 단독으로 오탈자 오류를 만들지 않는다."
+      "logic": "실제 안내 문구로 존재하는 일반 주의사항을 새로운 오류로 과도하게 재분류하지 않는다."
     }
   ]
 }
