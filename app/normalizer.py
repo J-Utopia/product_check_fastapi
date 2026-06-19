@@ -76,6 +76,28 @@ def _clean_items(items: list[str]) -> list[str]:
     return cleaned
 
 
+def _extract_hashtags(*values: Any) -> list[str]:
+    tags: list[str] = []
+    for value in values:
+        for item in _extract_strings(value):
+            compact = _clean_text(item)
+            if not compact:
+                continue
+            if compact.startswith("#"):
+                tags.append(compact)
+            elif " #" in compact or compact.count("#") >= 1:
+                tags.extend(part for part in compact.split() if part.startswith("#"))
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for tag in tags:
+        normalized = tag.strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(normalized)
+    return deduped
+
+
 def _event_from_place(place: dict[str, Any]) -> ScheduleEvent:
     return ScheduleEvent(
         place_name=_clean_text(place.get("itiPlaceName") or place.get("placeNameK") or place.get("placeNameE")),
@@ -130,6 +152,16 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
     flight_remarks_raw = raw.get("flight_remarks", [])
     key_points = raw.get("key_points", {})
     package_badges = _extract_strings(package_info.get("badges"))
+    hashtags = _extract_hashtags(
+        raw.get("tags"),
+        detail.get("tags"),
+        detail.get("hashTags"),
+        detail.get("hashtags"),
+        package_info.get("tags"),
+        package_info.get("hashTags"),
+        key_points.get("tags"),
+        key_points.get("hashTags"),
+    )
 
     schedule_days: list[DaySchedule] = []
     city_names: set[str] = set()
@@ -220,6 +252,7 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
         product_code=_clean_text(detail.get("productCode") or package_info.get("pcode")) or None,
         computed_product_code=_clean_text(package_info.get("computedProductCode")) or None,
         top_badges=package_badges,
+        hashtags=hashtags,
         departure_date=detail.get("departureDate") or package_info.get("date", {}).get("sdate"),
         arrival_date=detail.get("arrivalDate") or package_info.get("date", {}).get("edate"),
         nights=detail.get("travelNight") or package_info.get("date", {}).get("night"),
@@ -248,6 +281,11 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
         shopping_text=strip_html(detail.get("shoppingNote")),
         traveler_insurance_text=strip_html(
             detail.get("travelerInsuranceResponsibility") or key_points.get("travelerInsuranceInfo")
+        ),
+        expected_tour_mileage_text=_clean_text(
+            detail.get("accumulationExpectedTourMileage")
+            or key_points.get("accumulationExpectedTourMileage")
+            or package_info.get("accumulationExpectedTourMileage")
         ),
         special_benefits=[_clean_text(x) for x in _as_list(key_points.get("specialBenefits")) if _clean_text(x)],
         sightseeings=[_clean_text(x) for x in _as_list(key_points.get("sightseeings")) if _clean_text(x)],

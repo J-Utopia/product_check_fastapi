@@ -19,6 +19,8 @@ def build_product(**overrides: object) -> NormalizedProduct:
         departure_flight="AB123",
         return_flight="AB124",
         direct_flight=True,
+        traveler_insurance_text="1억원 여행자 보험",
+        expected_tour_mileage_text="예상 마일리지 1000점",
         air_segments=[
             FlightSegment(
                 direction="DEPARTURE",
@@ -43,7 +45,7 @@ def build_product(**overrides: object) -> NormalizedProduct:
         ],
         shopping_count=0,
         optional_tour_or_not="N",
-        special_benefits=["상해 핵심 투어"],
+        special_benefits=["상해 특급 투어"],
         schedule_days=[
             DaySchedule(day_no=1, date="2026-06-20T00:00:00"),
             DaySchedule(day_no=2, date="2026-06-21T00:00:00"),

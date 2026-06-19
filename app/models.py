@@ -86,6 +86,7 @@ class NormalizedProduct(BaseModel):
     product_code: str | None = None
     computed_product_code: str | None = None
     top_badges: list[str] = Field(default_factory=list)
+    hashtags: list[str] = Field(default_factory=list)
     departure_date: str | None = None
     arrival_date: str | None = None
     nights: int | None = None
@@ -113,6 +114,7 @@ class NormalizedProduct(BaseModel):
     excluded_items: list[str] = Field(default_factory=list)
     shopping_text: str = ""
     traveler_insurance_text: str = ""
+    expected_tour_mileage_text: str = ""
     special_benefits: list[str] = Field(default_factory=list)
     sightseeings: list[str] = Field(default_factory=list)
     key_point_hotels: list[str] = Field(default_factory=list)
