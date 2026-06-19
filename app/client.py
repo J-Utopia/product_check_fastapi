@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import concurrent.futures
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -25,7 +27,6 @@ class EndpointSpec:
 class ModeTourApiClient:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._session = requests.Session()
         self._base_headers = capture_base_headers(settings)
         self._endpoints = (
             EndpointSpec("package_info", "/Package/GetPackageInfo"),
@@ -46,7 +47,7 @@ class ModeTourApiClient:
         url = f"{self._settings.base_url}{spec.path}"
         headers = self._headers_for_product(product_no)
         logger.info("Fetching %s for productNo=%s", spec.name, product_no)
-        response = self._session.get(
+        response = requests.get(
             url,
             params={"productNo": product_no},
             headers=headers,
@@ -62,4 +63,23 @@ class ModeTourApiClient:
         return data["result"]
 
     def fetch_all(self, product_no: str) -> dict[str, Any]:
-        return {spec.name: self._fetch_one(spec, product_no) for spec in self._endpoints}
+        started_at = time.perf_counter()
+        results: dict[str, Any] = {}
+        max_workers = min(len(self._endpoints), 8)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_spec = {
+                executor.submit(self._fetch_one, spec, product_no): spec for spec in self._endpoints
+            }
+            try:
+                for future in concurrent.futures.as_completed(future_to_spec):
+                    spec = future_to_spec[future]
+                    results[spec.name] = future.result()
+            except Exception:
+                for future in future_to_spec:
+                    future.cancel()
+                raise
+
+        elapsed = time.perf_counter() - started_at
+        logger.info("Fetched %s upstream endpoints for productNo=%s in %.2fs", len(results), product_no, elapsed)
+        return {spec.name: results[spec.name] for spec in self._endpoints}
