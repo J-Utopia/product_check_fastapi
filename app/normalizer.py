@@ -29,6 +29,29 @@ def _clean_text(value: Any) -> str:
     return str(value).strip()
 
 
+def _to_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        digits = re.sub(r"[^\d-]", "", value)
+        if digits in ("", "-"):
+            return None
+        try:
+            return int(digits)
+        except ValueError:
+            return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _split_items(text: str) -> list[str]:
     if not text:
         return []
@@ -244,6 +267,7 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
     excluded_text = strip_html(detail.get("unincludedNote"))
     included_items = _clean_items(_extract_strings(included_text))
     excluded_items = _clean_items(_extract_strings(excluded_text))
+    package_price = package_info.get("price", {}) if isinstance(package_info.get("price"), dict) else {}
 
     return NormalizedProduct(
         product_no=product_no,
@@ -286,6 +310,26 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
             detail.get("accumulationExpectedTourMileage")
             or key_points.get("accumulationExpectedTourMileage")
             or package_info.get("accumulationExpectedTourMileage")
+        ),
+        display_price_adult=_to_int(
+            package_price.get("adult")
+            or package_price.get("adultPrice")
+            or package_info.get("adultPrice")
+            or package_info.get("priceAdult")
+        ),
+        selling_price_adult=_to_int(
+            detail.get("sellingPriceAdultTotalAmount")
+            or detail.get("sellingPriceAdult")
+            or key_points.get("sellingPrice")
+        ),
+        selling_price_child_no_bed=_to_int(
+            detail.get("sellingPriceKidNTotalAmount") or detail.get("sellingPriceKidN")
+        ),
+        selling_price_child_extra_bed=_to_int(
+            detail.get("sellingPriceKidETotalAmount") or detail.get("sellingPriceKidE")
+        ),
+        selling_price_infant=_to_int(
+            detail.get("sellingPriceToddlerTotalAmount") or detail.get("sellingPriceToddler")
         ),
         special_benefits=[_clean_text(x) for x in _as_list(key_points.get("specialBenefits")) if _clean_text(x)],
         sightseeings=[_clean_text(x) for x in _as_list(key_points.get("sightseeings")) if _clean_text(x)],

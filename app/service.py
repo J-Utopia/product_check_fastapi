@@ -68,6 +68,13 @@ class InspectionService:
                     "mileage": bool(normalized.expected_tour_mileage_text),
                 },
                 "coupon_count": normalized.coupon_count,
+                "prices": {
+                    "display_price_adult": normalized.display_price_adult,
+                    "selling_price_adult": normalized.selling_price_adult,
+                    "selling_price_child_no_bed": normalized.selling_price_child_no_bed,
+                    "selling_price_child_extra_bed": normalized.selling_price_child_extra_bed,
+                    "selling_price_infant": normalized.selling_price_infant,
+                },
             },
             result=InspectionPayload(
                 summary=summary,

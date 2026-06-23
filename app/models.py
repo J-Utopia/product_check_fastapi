@@ -115,6 +115,11 @@ class NormalizedProduct(BaseModel):
     shopping_text: str = ""
     traveler_insurance_text: str = ""
     expected_tour_mileage_text: str = ""
+    display_price_adult: int | None = None
+    selling_price_adult: int | None = None
+    selling_price_child_no_bed: int | None = None
+    selling_price_child_extra_bed: int | None = None
+    selling_price_infant: int | None = None
     special_benefits: list[str] = Field(default_factory=list)
     sightseeings: list[str] = Field(default_factory=list)
     key_point_hotels: list[str] = Field(default_factory=list)
