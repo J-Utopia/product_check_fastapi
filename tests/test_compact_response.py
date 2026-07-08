@@ -53,6 +53,7 @@ def build_envelope() -> InspectionEnvelope:
         local_required_expense_or_not="N",
         included_text="포함사항 원문 " * 50,
         excluded_text="불포함사항 원문 " * 50,
+        notice_text="무비자 안내와 일반여권 예외 안내",
         included_items=["항공", "호텔"],
         excluded_items=["개인경비"],
         shopping_text="쇼핑 안내 " * 50,
@@ -60,6 +61,8 @@ def build_envelope() -> InspectionEnvelope:
         expected_tour_mileage_text="마일리지 안내 " * 50,
         display_price_adult=1000000,
         selling_price_adult=900000,
+        product_point_text="핵심포인트 전신마사지 60분 포함",
+        product_point_items=["전신마사지 60분 포함"],
         special_benefits=["특전1", "특전2"],
         sightseeings=["에펠탑"],
         key_point_hotels=["시내 4성급"],
@@ -126,6 +129,7 @@ def test_compact_response_reduces_payload_size() -> None:
     assert compact.result.issues[0].evidence
     assert compact.result.normalized.hotels == ["Paris Hotel"]
     assert compact.result.normalized.schedule_days[0].day_no == 1
+    assert compact.result.normalized.product_point_items == ["전신마사지 60분 포함"]
 
 
 def test_compact_response_preserves_error_envelope() -> None:

@@ -108,6 +108,7 @@ class NormalizedProduct(BaseModel):
     meeting_time: str | None = None
     meeting_place_text: str = ""
     meeting_info_text: str = ""
+    notice_text: str = ""
     included_text: str = ""
     excluded_text: str = ""
     included_items: list[str] = Field(default_factory=list)
@@ -121,6 +122,8 @@ class NormalizedProduct(BaseModel):
     selling_price_child_extra_bed: int | None = None
     selling_price_infant: int | None = None
     special_benefits: list[str] = Field(default_factory=list)
+    product_point_text: str = ""
+    product_point_items: list[str] = Field(default_factory=list)
     sightseeings: list[str] = Field(default_factory=list)
     key_point_hotels: list[str] = Field(default_factory=list)
     key_point_meals: list[str] = Field(default_factory=list)
@@ -210,6 +213,8 @@ class CompactNormalizedProduct(BaseModel):
     included_items: list[str] = Field(default_factory=list)
     excluded_items: list[str] = Field(default_factory=list)
     special_benefits: list[str] = Field(default_factory=list)
+    product_point_text: str = ""
+    product_point_items: list[str] = Field(default_factory=list)
     sightseeings: list[str] = Field(default_factory=list)
     key_point_hotels: list[str] = Field(default_factory=list)
     key_point_meals: list[str] = Field(default_factory=list)

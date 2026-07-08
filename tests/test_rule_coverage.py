@@ -44,7 +44,9 @@ def build_product() -> NormalizedProduct:
         selling_price_child_no_bed=1849000,
         selling_price_child_extra_bed=1849000,
         selling_price_infant=150000,
-        special_benefits=["전신 마사지 60분 포함"],
+        special_benefits=[],
+        product_point_text="핵심포인트\n- 여행의 피로를 풀어주는 전신마사지 60분 포함",
+        product_point_items=["여행의 피로를 풀어주는 전신마사지 60분 포함"],
         sightseeings=["유리다리"],
         key_point_hotels=["힐튼 리조트"],
         key_point_meals=["버섯샤브샤브"],
@@ -103,3 +105,20 @@ def test_rule_engine_flags_meeting_and_guide_gaps() -> None:
     issue_ids = {issue.rule_id for issue in result.issues}
     assert "MEETING-001" in issue_ids
     assert "GUIDE-001" in issue_ids
+
+
+def test_rule_engine_allows_general_passport_exception_notice() -> None:
+    product = build_product()
+    product.excluded_text = (
+        "[중국 무비자 입국안내] 한국인 대상 중국 무비자 입국 시행 "
+        "일반 여권 이외 개인비자 필요 → 중국 대사관 개별 문의"
+    )
+    product.notice_text = (
+        "대한민국 국적자는 중국 무비자 입국이 가능합니다. "
+        "일반여권 이외는 개인 비자 필요"
+    )
+
+    result = RuleEngine().validate(product)
+
+    issue_ids = {issue.rule_id for issue in result.issues}
+    assert "DOC-001" not in issue_ids

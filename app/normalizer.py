@@ -99,6 +99,28 @@ def _clean_items(items: list[str]) -> list[str]:
     return cleaned
 
 
+def _extract_product_point_items(*values: Any) -> list[str]:
+    items: list[str] = []
+    for value in values:
+        text = strip_html(value)
+        if not text:
+            continue
+        for line in re.split(r"[\r\n]+", text):
+            compact = _clean_text(line).lstrip("-•■▶▣")
+            compact = _clean_text(compact)
+            if len(compact) < 2:
+                continue
+            items.append(compact)
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        deduped.append(item)
+    return deduped
+
+
 def _extract_hashtags(*values: Any) -> list[str]:
     tags: list[str] = []
     for value in values:
@@ -265,6 +287,17 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
     coupon_titles = _clean_items(_extract_strings(coupons_raw))
     included_text = strip_html(detail.get("includedNote"))
     excluded_text = strip_html(detail.get("unincludedNote"))
+    notice_text = strip_html(detail.get("noticeNote"))
+    product_point_text = strip_html(
+        detail.get("travelRecommendNote")
+        or detail.get("generalBonusNote")
+        or detail.get("specialEventNote")
+    )
+    product_point_items = _extract_product_point_items(
+        detail.get("travelRecommendNote"),
+        detail.get("generalBonusNote"),
+        detail.get("specialEventNote"),
+    )
     included_items = _clean_items(_extract_strings(included_text))
     excluded_items = _clean_items(_extract_strings(excluded_text))
     package_price = package_info.get("price", {}) if isinstance(package_info.get("price"), dict) else {}
@@ -298,6 +331,7 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
         meeting_time=_clean_text(detail.get("meetingTime")) or None,
         meeting_place_text=strip_html(detail.get("meetingPlace2")),
         meeting_info_text=strip_html(detail.get("meetingInfo")),
+        notice_text=notice_text,
         included_text=included_text,
         excluded_text=excluded_text,
         included_items=included_items,
@@ -332,6 +366,8 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
             detail.get("sellingPriceToddlerTotalAmount") or detail.get("sellingPriceToddler")
         ),
         special_benefits=[_clean_text(x) for x in _as_list(key_points.get("specialBenefits")) if _clean_text(x)],
+        product_point_text=product_point_text,
+        product_point_items=product_point_items,
         sightseeings=[_clean_text(x) for x in _as_list(key_points.get("sightseeings")) if _clean_text(x)],
         key_point_hotels=[_clean_text(x) for x in _as_list(key_points.get("hotels")) if _clean_text(x)],
         key_point_meals=[_clean_text(x) for x in _as_list(key_points.get("meals")) if _clean_text(x)],

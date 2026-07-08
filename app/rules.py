@@ -38,6 +38,7 @@ MANDATORY_EXPENSE_PATTERNS = (
 )
 OPTION_PRESENT_PATTERNS = ("선택관광", "옵션", "$", "USD", "유료")
 SHOPPING_PRESENT_PATTERNS = ("쇼핑센터", "쇼핑", "구매", "매장", "특산품점")
+GENERAL_PASSPORT_EXCEPTION_PATTERNS = ("일반 여권 이외", "일반여권 이외", "개인비자 필요", "중국 대사관 개별 문의")
 HOTEL_MARKETING_TOKENS = (
     "호텔",
     "리조트",
@@ -343,21 +344,22 @@ class RuleEngine:
         if not product.included_text and not product.excluded_text:
             return issues
 
-        visa_text = f"{product.included_text} {product.excluded_text}"
+        visa_text = f"{product.included_text} {product.excluded_text} {product.notice_text}"
         if _contains_any(visa_text, ("비자", "무비자")) and "중국" in product.country_names:
             visa_free_markers = ("무비자", "비자면제", "면제")
             visa_required_markers = ("비자필요", "비자 신청", "비자발급", "비자비용", "사전비자")
             if _contains_any(visa_text, visa_free_markers) and _contains_any(visa_text, visa_required_markers):
-                issues.append(
-                    _issue(
-                        "DOC-001",
-                        "WARN",
-                        "비자 문구 충돌",
-                        "비자 면제/무비자와 비자 필요 문구가 동시에 나타난다.",
-                        "비자 안내를 하나의 기준으로 다시 정리해야 한다.",
-                        [("normalized.included_text", product.included_text), ("normalized.excluded_text", product.excluded_text)],
+                if not _contains_any(visa_text, GENERAL_PASSPORT_EXCEPTION_PATTERNS):
+                    issues.append(
+                        _issue(
+                            "DOC-001",
+                            "WARN",
+                            "비자 문구 충돌",
+                            "비자 면제/무비자와 비자 필요 문구가 동시에 나타난다.",
+                            "비자 안내를 하나의 기준으로 다시 정리해야 한다.",
+                            [("normalized.excluded_text", product.excluded_text), ("normalized.notice_text", product.notice_text)],
+                        )
                     )
-                )
 
         if _contains_any(product.included_text, NO_TIP_PATTERNS) and _contains_any(product.excluded_text, TIP_IGNORE_PATTERNS):
             issues.append(
@@ -696,6 +698,8 @@ class RuleEngine:
         source_claims = _extract_duration_claims(
             [
                 product.title,
+                product.product_point_text,
+                *product.product_point_items,
                 *product.special_benefits,
                 *product.sightseeings,
                 *product.key_point_meals,
@@ -771,24 +775,6 @@ class RuleEngine:
                 )
 
         for day in product.schedule_days:
-            sequences = [
-                item.sequence
-                for item in [*day.meals, *day.guides, *day.hotels, *day.transports, *day.others]
-                if item.sequence is not None
-            ]
-            if sequences and sequences != sorted(sequences):
-                issues.append(
-                    _issue(
-                        "DAY-003",
-                        "WARN",
-                        "일정 순서 확인 필요",
-                        f"{day.day_no}일차의 seq 순서가 자연스럽게 증가하지 않는다.",
-                        "같은 일차 내 관광/식사/이동 순서를 다시 확인해야 한다.",
-                        [("day.sequences", " / ".join(str(seq) for seq in sequences))],
-                    )
-                )
-                break
-
             day_text = " ".join(
                 [
                     day.schedule_hotel_text,

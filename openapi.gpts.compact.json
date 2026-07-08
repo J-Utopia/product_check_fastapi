@@ -270,6 +270,15 @@
               "type": "string"
             }
           },
+          "product_point_text": {
+            "type": "string"
+          },
+          "product_point_items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "sightseeings": {
             "type": "array",
             "items": {

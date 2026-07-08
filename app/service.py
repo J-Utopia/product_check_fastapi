@@ -160,6 +160,8 @@ class InspectionService:
             included_items=normalized.included_items,
             excluded_items=normalized.excluded_items,
             special_benefits=normalized.special_benefits,
+            product_point_text=normalized.product_point_text[:800],
+            product_point_items=normalized.product_point_items[:20],
             sightseeings=normalized.sightseeings,
             key_point_hotels=normalized.key_point_hotels,
             key_point_meals=normalized.key_point_meals,
