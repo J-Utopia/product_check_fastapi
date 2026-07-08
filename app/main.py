@@ -1,8 +1,12 @@
+#실행
+#cd C:\Users\jeonuk\Desktop\Project\Python\ModewareBusiness\일정표검수
+#python -m uvicorn app.main:app --reload
+#브라우저 http://127.0.0.1:8000/docs 실행
 from __future__ import annotations
-
 import functools
 import logging
 import time
+import json
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -10,7 +14,7 @@ from fastapi.responses import JSONResponse
 from .auth import HeaderCaptureError
 from .client import ModeTourApiError
 from .config import settings
-from .models import InspectionEnvelope, RunItineraryRequest
+from .models import CompactInspectionEnvelope, InspectionEnvelope, RunItineraryRequest
 from .service import InspectionService, build_default_service
 
 logging.basicConfig(level=logging.INFO)
@@ -56,14 +60,31 @@ def openapi_json() -> dict[str, object]:
     return app.openapi()
 
 
-@app.post("/run-itinerary", response_model=InspectionEnvelope)
-def run_itinerary(request: RunItineraryRequest) -> JSONResponse:
+@app.post("/run-itinerary", response_model=InspectionEnvelope | CompactInspectionEnvelope)
+def run_itinerary(request: RunItineraryRequest, compact: bool = False) -> JSONResponse:
     started_at = time.perf_counter()
     try:
         service = get_service()
         envelope = service.run(request.group_id)
-        logger.info("Completed inspection for group_id=%s in %.2fs", request.group_id, time.perf_counter() - started_at)
-        return JSONResponse(status_code=200, content=envelope.model_dump())
+        payload_model = service.to_compact_envelope(envelope) if compact else envelope
+
+        payload = payload_model.model_dump()
+        body_size = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+
+        logger.info(
+            "Response Size = %d bytes (%.2f KB / %.2f MB)",
+            body_size,
+            body_size / 1024,
+            body_size / 1024 / 1024,
+        )
+
+        logger.info(
+            "Completed inspection for group_id=%s compact=%s in %.2fs",
+            request.group_id,
+            compact,
+            time.perf_counter() - started_at,
+        )
+        return JSONResponse(status_code=200, content=payload)
     except HeaderCaptureError as exc:
         return JSONResponse(
             status_code=503,

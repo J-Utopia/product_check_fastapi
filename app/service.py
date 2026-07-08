@@ -5,7 +5,15 @@ from typing import Protocol
 
 from .client import ModeTourApiClient
 from .config import Settings
-from .models import InspectionEnvelope, InspectionPayload, NormalizedProduct
+from .models import (
+    CompactInspectionEnvelope,
+    CompactInspectionPayload,
+    CompactIssue,
+    CompactNormalizedProduct,
+    InspectionEnvelope,
+    InspectionPayload,
+    NormalizedProduct,
+)
 from .normalizer import normalize_product
 from .rules import RuleEngine
 
@@ -81,6 +89,78 @@ class InspectionService:
                 normalized=normalized,
                 issues=validation.issues,
                 quality=validation.quality,
+            ),
+        )
+
+    def to_compact_envelope(self, envelope: InspectionEnvelope) -> CompactInspectionEnvelope:
+        if envelope.result is None:
+            return CompactInspectionEnvelope(
+                status=envelope.status,
+                code=envelope.code,
+                message=envelope.message,
+                group_id=envelope.group_id,
+                meta=envelope.meta,
+                result=None,
+            )
+
+        normalized = envelope.result.normalized
+        compact_normalized = CompactNormalizedProduct(
+            product_no=normalized.product_no,
+            product_name=normalized.product_name,
+            title=normalized.title,
+            top_badges=normalized.top_badges,
+            hashtags=normalized.hashtags,
+            departure_date=normalized.departure_date,
+            arrival_date=normalized.arrival_date,
+            nights=normalized.nights,
+            days=normalized.days,
+            country_names=normalized.country_names,
+            city_names=normalized.city_names,
+            departure_airline_name=normalized.departure_airline_name,
+            return_airline_name=normalized.return_airline_name,
+            departure_flight=normalized.departure_flight,
+            return_flight=normalized.return_flight,
+            direct_flight=normalized.direct_flight,
+            shopping_count=normalized.shopping_count,
+            optional_tour_or_not=normalized.optional_tour_or_not,
+            local_required_expense_or_not=normalized.local_required_expense_or_not,
+            local_required_expense=normalized.local_required_expense,
+            included_items=normalized.included_items,
+            excluded_items=normalized.excluded_items,
+            special_benefits=normalized.special_benefits,
+            sightseeings=normalized.sightseeings,
+            key_point_hotels=normalized.key_point_hotels,
+            key_point_meals=normalized.key_point_meals,
+            key_point_leader_guild=normalized.key_point_leader_guild,
+            display_price_adult=normalized.display_price_adult,
+            selling_price_adult=normalized.selling_price_adult,
+            selling_price_child_no_bed=normalized.selling_price_child_no_bed,
+            selling_price_child_extra_bed=normalized.selling_price_child_extra_bed,
+            selling_price_infant=normalized.selling_price_infant,
+            coupon_count=normalized.coupon_count,
+            coupon_titles=normalized.coupon_titles,
+        )
+        compact_issues = [
+            CompactIssue(
+                rule_id=issue.rule_id,
+                level=issue.level,
+                title=issue.title,
+                message=issue.message,
+                suggestion=issue.suggestion,
+            )
+            for issue in envelope.result.issues
+        ]
+        return CompactInspectionEnvelope(
+            status=envelope.status,
+            code=envelope.code,
+            message=envelope.message,
+            group_id=envelope.group_id,
+            meta=envelope.meta,
+            result=CompactInspectionPayload(
+                summary=envelope.result.summary,
+                normalized=compact_normalized,
+                issues=compact_issues,
+                quality=envelope.result.quality,
             ),
         )
 

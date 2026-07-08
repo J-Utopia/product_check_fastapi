@@ -160,5 +160,66 @@ class InspectionEnvelope(BaseModel):
     result: InspectionPayload | None = None
 
 
+class CompactIssue(BaseModel):
+    rule_id: str
+    level: IssueLevel
+    title: str
+    message: str
+    suggestion: str
+
+
+class CompactNormalizedProduct(BaseModel):
+    product_no: str
+    product_name: str
+    title: str
+    top_badges: list[str] = Field(default_factory=list)
+    hashtags: list[str] = Field(default_factory=list)
+    departure_date: str | None = None
+    arrival_date: str | None = None
+    nights: int | None = None
+    days: int | None = None
+    country_names: list[str] = Field(default_factory=list)
+    city_names: list[str] = Field(default_factory=list)
+    departure_airline_name: str | None = None
+    return_airline_name: str | None = None
+    departure_flight: str | None = None
+    return_flight: str | None = None
+    direct_flight: bool | None = None
+    shopping_count: int | None = None
+    optional_tour_or_not: str | None = None
+    local_required_expense_or_not: str | None = None
+    local_required_expense: int | None = None
+    included_items: list[str] = Field(default_factory=list)
+    excluded_items: list[str] = Field(default_factory=list)
+    special_benefits: list[str] = Field(default_factory=list)
+    sightseeings: list[str] = Field(default_factory=list)
+    key_point_hotels: list[str] = Field(default_factory=list)
+    key_point_meals: list[str] = Field(default_factory=list)
+    key_point_leader_guild: str = ""
+    display_price_adult: int | None = None
+    selling_price_adult: int | None = None
+    selling_price_child_no_bed: int | None = None
+    selling_price_child_extra_bed: int | None = None
+    selling_price_infant: int | None = None
+    coupon_count: int = 0
+    coupon_titles: list[str] = Field(default_factory=list)
+
+
+class CompactInspectionPayload(BaseModel):
+    summary: str
+    normalized: CompactNormalizedProduct
+    issues: list[CompactIssue]
+    quality: QualityScore
+
+
+class CompactInspectionEnvelope(BaseModel):
+    status: str
+    code: str
+    message: str
+    group_id: str
+    meta: dict[str, Any]
+    result: CompactInspectionPayload | None = None
+
+
 class RunItineraryRequest(BaseModel):
     group_id: str
