@@ -61,7 +61,7 @@ def openapi_json() -> dict[str, object]:
 
 
 @app.post("/run-itinerary", response_model=InspectionEnvelope | CompactInspectionEnvelope)
-def run_itinerary(request: RunItineraryRequest, compact: bool = False) -> JSONResponse:
+def run_itinerary(request: RunItineraryRequest, compact: bool = True) -> JSONResponse:
     started_at = time.perf_counter()
     try:
         service = get_service()
