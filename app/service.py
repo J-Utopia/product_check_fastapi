@@ -6,6 +6,8 @@ from typing import Protocol
 from .client import ModeTourApiClient
 from .config import Settings
 from .models import (
+    CompactDaySummary,
+    CompactFlightSummary,
     CompactInspectionEnvelope,
     CompactInspectionPayload,
     CompactIssue,
@@ -104,6 +106,36 @@ class InspectionService:
             )
 
         normalized = envelope.result.normalized
+        compact_hotels = list(dict.fromkeys(hotel.hotel_name for hotel in normalized.hotels if hotel.hotel_name))
+        compact_air_segments = [
+            CompactFlightSummary(
+                direction=segment.direction,
+                flight_no=segment.flight_no,
+                departure_city_name=segment.departure_city_name,
+                departure_time=segment.departure_time,
+                arrival_city_name=segment.arrival_city_name,
+                arrival_time=segment.arrival_time,
+            )
+            for segment in normalized.air_segments
+        ]
+        compact_schedule_days = [
+            CompactDaySummary(
+                day_no=day.day_no,
+                date=day.date,
+                route_headers=day.route_headers,
+                place_names=day.place_names[:8],
+                highlights=[
+                    item
+                    for item in [
+                        day.schedule_hotel_text,
+                        *[event.summary for event in day.meals[:2] if event.summary],
+                        *[event.summary for event in day.others[:3] if event.summary],
+                    ]
+                    if item
+                ][:6],
+            )
+            for day in normalized.schedule_days
+        ]
         compact_normalized = CompactNormalizedProduct(
             product_no=normalized.product_no,
             product_name=normalized.product_name,
@@ -139,6 +171,9 @@ class InspectionService:
             selling_price_infant=normalized.selling_price_infant,
             coupon_count=normalized.coupon_count,
             coupon_titles=normalized.coupon_titles,
+            hotels=compact_hotels,
+            air_segments=compact_air_segments,
+            schedule_days=compact_schedule_days,
         )
         compact_issues = [
             CompactIssue(
@@ -147,6 +182,10 @@ class InspectionService:
                 title=issue.title,
                 message=issue.message,
                 suggestion=issue.suggestion,
+                evidence=[
+                    evidence.model_copy(update={"value_excerpt": evidence.value_excerpt[:100]})
+                    for evidence in issue.evidence[:3]
+                ],
             )
             for issue in envelope.result.issues
         ]

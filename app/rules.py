@@ -10,6 +10,7 @@ from .models import EvidenceItem, Issue, NormalizedProduct, QualityScore
 
 NIGHT_DAY_RE = re.compile(r"(\d+)\s*박\s*(\d+)\s*일")
 TIME_RE = re.compile(r"^(\d{2}):(\d{2})$")
+DURATION_RE = re.compile(r"([가-힣A-Za-z0-9\s]+?)\s*(\d{2,3})\s*분")
 
 NO_TIP_PATTERNS = (
     "NO팁",
@@ -167,6 +168,21 @@ def _parse_duration(value: str | None) -> int | None:
     return _parse_minutes(value)
 
 
+def _compact_space(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def _extract_duration_claims(values: Iterable[str]) -> dict[str, set[int]]:
+    claims: dict[str, set[int]] = {}
+    for value in values:
+        for name, minutes_text in DURATION_RE.findall(value):
+            normalized_name = _compact_space(name)
+            if len(normalized_name) < 2:
+                continue
+            claims.setdefault(normalized_name, set()).add(int(minutes_text))
+    return claims
+
+
 def _score(issues: list[Issue]) -> QualityScore:
     score = 100
     for issue in issues:
@@ -206,7 +222,9 @@ class RuleEngine:
         issues.extend(self._validate_included_excluded(product))
         issues.extend(self._validate_air(product))
         issues.extend(self._validate_key_points(product))
+        issues.extend(self._validate_hotel_and_meeting(product))
         issues.extend(self._validate_day_logic(product))
+        issues.extend(self._validate_point_consistency(product))
         issues.extend(self._validate_text_quality(product))
         return ValidationResult(issues=issues, quality=_score(issues))
 
@@ -598,6 +616,119 @@ class RuleEngine:
                     [("expected_tour_mileage_text", product.expected_tour_mileage_text)],
                 )
             )
+
+        return issues
+
+    def _validate_hotel_and_meeting(self, product: NormalizedProduct) -> list[Issue]:
+        issues: list[Issue] = []
+
+        if product.nights is not None and product.hotels:
+            hotel_days = sorted({hotel.day_no for hotel in product.hotels if hotel.day_no > 0})
+            if hotel_days and len(hotel_days) != product.nights:
+                issues.append(
+                    _issue(
+                        "HOTEL-001",
+                        "WARN",
+                        "숙박 박수 확인 필요",
+                        "예정호텔이 배정된 숙박 일차 수가 상품 박수와 다르다.",
+                        "예정호텔 일차와 실제 박수를 다시 확인해야 한다.",
+                        [("normalized.nights", str(product.nights)), ("normalized.hotel_days", " / ".join(str(day) for day in hotel_days))],
+                    )
+                )
+
+        if product.meeting_place_text and not product.meeting_time:
+            issues.append(
+                _issue(
+                    "MEETING-001",
+                    "WARN",
+                    "미팅시간 누락 가능성",
+                    "미팅 장소 안내는 있으나 미팅 시간이 비어 있다.",
+                    "미팅 시간 또는 장소 안내를 다시 확인해야 한다.",
+                    [("normalized.meeting_place_text", product.meeting_place_text), ("normalized.meeting_time", product.meeting_time or "")],
+                )
+            )
+
+        guide_blob = " ".join(
+            [
+                product.key_point_leader_guild,
+                product.guide_status or "",
+                product.leader_status or "",
+                " ".join(item.get("title", "") for item in product.guide_info),
+                " ".join(item.get("text", "") for item in product.guide_info),
+            ]
+        )
+        if product.guide_yn == "Y" and not guide_blob.strip():
+            issues.append(
+                _issue(
+                    "GUIDE-001",
+                    "WARN",
+                    "가이드 표기 상충",
+                    "가이드 동행 정보는 있으나 핵심포인트나 상품 정보에 가이드 상태가 드러나지 않는다.",
+                    "가이드 동행 여부를 핵심포인트 또는 상품 정보에 명확히 표시해야 한다.",
+                    [("normalized.guide_yn", product.guide_yn or ""), ("normalized.key_point_leader_guild", product.key_point_leader_guild)],
+                )
+            )
+
+        hotel_blob = " ".join(hotel.hotel_name for hotel in product.hotels if hotel.hotel_name)
+        title_hotel_terms = [
+            token
+            for token in _extract_meaningful_tokens(product.title)
+            if _contains_any(token, HOTEL_MARKETING_TOKENS)
+        ]
+        missing_title_hotels = [term for term in title_hotel_terms if not _contains_token(hotel_blob, term)]
+        if missing_title_hotels and hotel_blob:
+            issues.append(
+                _issue(
+                    "HOTEL-002",
+                    "WARN",
+                    "상품명 호텔 문구 근거 부족",
+                    "상품명에 보이는 호텔/리조트 계열 문구를 실제 예정호텔에서 바로 확인하기 어렵다.",
+                    "상품명의 숙박 홍보 문구가 실제 예정호텔과 연결되는지 다시 확인해야 한다.",
+                    [("product.title", product.title), ("normalized.hotels", hotel_blob)],
+                )
+            )
+
+        return issues
+
+    def _validate_point_consistency(self, product: NormalizedProduct) -> list[Issue]:
+        issues: list[Issue] = []
+
+        source_claims = _extract_duration_claims(
+            [
+                product.title,
+                *product.special_benefits,
+                *product.sightseeings,
+                *product.key_point_meals,
+                *product.key_point_hotels,
+            ]
+        )
+        schedule_claims = _extract_duration_claims(
+            [
+                _joined_day_texts(product),
+                *[day.schedule_hotel_text for day in product.schedule_days],
+            ]
+        )
+        for source_name, source_minutes in source_claims.items():
+            for schedule_name, schedule_minutes in schedule_claims.items():
+                if not (
+                    _contains_token(source_name, schedule_name) or _contains_token(schedule_name, source_name)
+                ):
+                    continue
+                if source_minutes != schedule_minutes:
+                    issues.append(
+                        _issue(
+                            "POINT-001",
+                            "ERROR",
+                            "핵심포인트/일정 시간 정보 상충",
+                            f"핵심포인트의 '{source_name}' 소요시간과 일자별 일정의 시간이 서로 다르다.",
+                            "핵심포인트와 실제 일정표의 소요시간 표기를 하나로 맞춰야 한다.",
+                            [
+                                ("key_points.duration", f"{source_name}: {sorted(source_minutes)}"),
+                                ("schedule.duration", f"{schedule_name}: {sorted(schedule_minutes)}"),
+                            ],
+                        )
+                    )
+                    return issues
 
         return issues
 

@@ -166,6 +166,24 @@ class CompactIssue(BaseModel):
     title: str
     message: str
     suggestion: str
+    evidence: list[EvidenceItem] = Field(default_factory=list)
+
+
+class CompactFlightSummary(BaseModel):
+    direction: str
+    flight_no: str | None = None
+    departure_city_name: str | None = None
+    departure_time: str | None = None
+    arrival_city_name: str | None = None
+    arrival_time: str | None = None
+
+
+class CompactDaySummary(BaseModel):
+    day_no: int
+    date: str | None = None
+    route_headers: list[str] = Field(default_factory=list)
+    place_names: list[str] = Field(default_factory=list)
+    highlights: list[str] = Field(default_factory=list)
 
 
 class CompactNormalizedProduct(BaseModel):
@@ -203,6 +221,9 @@ class CompactNormalizedProduct(BaseModel):
     selling_price_infant: int | None = None
     coupon_count: int = 0
     coupon_titles: list[str] = Field(default_factory=list)
+    hotels: list[str] = Field(default_factory=list)
+    air_segments: list[CompactFlightSummary] = Field(default_factory=list)
+    schedule_days: list[CompactDaySummary] = Field(default_factory=list)
 
 
 class CompactInspectionPayload(BaseModel):

@@ -123,6 +123,9 @@ def test_compact_response_reduces_payload_size() -> None:
     assert compact.result is not None
     assert compact.result.quality == envelope.result.quality
     assert compact.result.issues[0].message == envelope.result.issues[0].message
+    assert compact.result.issues[0].evidence
+    assert compact.result.normalized.hotels == ["Paris Hotel"]
+    assert compact.result.normalized.schedule_days[0].day_no == 1
 
 
 def test_compact_response_preserves_error_envelope() -> None:

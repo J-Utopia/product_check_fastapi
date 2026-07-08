@@ -314,6 +314,24 @@
             "items": {
               "type": "string"
             }
+          },
+          "hotels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "air_segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompactFlightSummary"
+            }
+          },
+          "schedule_days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompactDaySummary"
+            }
           }
         },
         "required": ["product_no", "product_name", "title"]
@@ -337,9 +355,84 @@
           },
           "suggestion": {
             "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompactEvidenceItem"
+            }
           }
         },
         "required": ["rule_id", "level", "title", "message", "suggestion"]
+      },
+      "CompactEvidenceItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "value_excerpt": {
+            "type": "string"
+          }
+        },
+        "required": ["field", "value_excerpt"]
+      },
+      "CompactFlightSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "direction": {
+            "type": "string"
+          },
+          "flight_no": {
+            "type": ["string", "null"]
+          },
+          "departure_city_name": {
+            "type": ["string", "null"]
+          },
+          "departure_time": {
+            "type": ["string", "null"]
+          },
+          "arrival_city_name": {
+            "type": ["string", "null"]
+          },
+          "arrival_time": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["direction"]
+      },
+      "CompactDaySummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "day_no": {
+            "type": "integer"
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "route_headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "place_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["day_no", "route_headers", "place_names", "highlights"]
       },
       "QualityScore": {
         "type": "object",
