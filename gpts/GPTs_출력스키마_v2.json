@@ -17,6 +17,23 @@
   "rules": {
     "deterministic": "FastAPI deterministic.results를 그대로 사용하고 재판정하지 않는다.",
     "semantic": "semantic_packets의 claims, evidence, guards만 사용해 failed, passed, not_evaluated 중 하나로 판정한다.",
-    "no_issue_text": "핵심 문제 없음"
-  }
+    "no_issue_text": "핵심 문제 없음",
+    "hide_internal_terms": "최종 사용자 답변에는 API명, JSON 필드명, packet명, rule_id, passed/failed/not_evaluated 같은 내부 판정명을 노출하지 않는다.",
+    "tone": "일정표 담당자가 이해할 수 있는 자연스러운 한국어 업무 문장으로 작성한다."
+  },
+  "forbidden_user_facing_terms": [
+    "semantic_packets",
+    "claims",
+    "evidence",
+    "guards",
+    "key_points",
+    "deterministic",
+    "source_path",
+    "SEM-",
+    "passed",
+    "failed",
+    "not_evaluated",
+    "API",
+    "JSON"
+  ]
 }

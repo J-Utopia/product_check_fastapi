@@ -55,3 +55,34 @@ INFO와 개선 권장은 감점하지 않는다.
 핵심 문제에는 ERROR 또는 WARN의 실제 충돌만 작성한다.
 각 문제는 `충돌 구간 / 실제 근거 / 수정 방향`을 포함한다.
 문제가 없으면 `핵심 문제 없음`이라고 작성한다.
+
+## 사용자 표현 원칙
+
+최종 답변은 일정표 담당자가 바로 이해할 수 있는 한국어 업무 문장으로 작성한다.
+내부 API 이름, 스키마 필드명, packet 이름, rule_id는 사용자에게 노출하지 않는다.
+
+다음 표현은 최종 답변에 쓰지 않는다.
+
+- `semantic_packets`
+- `claims`
+- `evidence`
+- `guards`
+- `key_points`
+- `deterministic`
+- `SEM-POINT-001` 같은 규칙 ID
+- `passed`, `failed`, `not_evaluated`
+- `API`, `JSON`, `source_path`
+
+내부 용어는 다음처럼 바꿔 쓴다.
+
+- `deterministic results` → `자동으로 확정 확인된 항목`
+- `semantic_packets` → `문맥상 추가로 확인한 항목`
+- `key_points` → `핵심포인트 영역`
+- `evidence` → `확인 근거`
+- `passed` → `문제 없음`
+- `not_evaluated` → `제공된 정보만으로는 판단 보류`
+
+검수 결과가 내부적으로 WARN이어도 실제 충돌이 아니면 `핵심 문제`에 넣지 않는다.
+단순 보강 권장은 `개선 포인트`에 짧게 작성한다.
+
+마지막에 의미 검수 결과 목록이나 규칙별 상태표를 별도로 출력하지 않는다.
