@@ -1,0 +1,66 @@
+{
+  "version": "2.0.0",
+  "rules": [
+    {
+      "rule_id": "SEM-POINT-001",
+      "level": "WARN",
+      "title": "핵심포인트와 실제 일정의 의미상 불일치",
+      "required_packet_fields": ["claims", "evidence"],
+      "logic": "상품POINT, 특별혜택, 관광, 체험, 공연, 마사지 주장이 실제 포함 일정에 구현되는지 판단한다.",
+      "guards": [
+        "선택관광은 포함 일정으로 인정하지 않는다.",
+        "단순 경유는 관광으로 인정하지 않는다.",
+        "표현 차이만으로 불일치 판정하지 않는다."
+      ],
+      "deduction": 8
+    },
+    {
+      "rule_id": "SEM-TITLE-PLACE-001",
+      "level": "ERROR",
+      "title": "상품명 핵심 관광지와 일정 불일치",
+      "required_packet_fields": ["claims", "evidence"],
+      "logic": "상품명에서 핵심 구성으로 명시한 관광지나 체험이 실제 일정에 존재하는지 판단한다.",
+      "guards": [
+        "도시명이 일정에 있다고 해당 관광을 수행한 것으로 자동 인정하지 않는다.",
+        "동일 장소의 통용명과 공식명은 같은 대상으로 볼 수 있다."
+      ],
+      "deduction": 15
+    },
+    {
+      "rule_id": "SEM-FREETIME-001",
+      "level": "WARN",
+      "title": "자유시간 포함 주장 검증",
+      "required_packet_fields": ["claims", "evidence"],
+      "logic": "자유시간 포함 주장이 실제 일정에서 고객이 사용할 수 있는 시간으로 구현되는지 판단한다.",
+      "guards": [
+        "이동 대기시간을 자유시간으로 자동 인정하지 않는다.",
+        "자유시간의 정확한 분 단위가 없다는 이유만으로 오류 처리하지 않는다."
+      ],
+      "deduction": 6
+    },
+    {
+      "rule_id": "SEM-INEX-001",
+      "level": "ERROR",
+      "title": "포함/불포함 의미상 충돌",
+      "required_packet_fields": ["claims", "evidence"],
+      "logic": "동일 비용 또는 서비스가 포함과 불포함에 동시에 고객 부담으로 표현되는지 판단한다.",
+      "guards": [
+        "기본 제공과 개인 추가 구매를 구분한다.",
+        "매너팁과 필수 가이드경비를 구분한다."
+      ],
+      "deduction": 15
+    },
+    {
+      "rule_id": "SEM-COPY-001",
+      "level": "WARN",
+      "title": "고객 오해 가능 문안",
+      "required_packet_fields": ["claims", "evidence"],
+      "logic": "사실과 직접 충돌하지 않더라도 조건부·예정·선택 사항을 확정 제공처럼 표현했는지 판단한다.",
+      "guards": [
+        "더 좋은 표현이 가능하다는 이유만으로 오류 처리하지 않는다.",
+        "실제 오해 가능성이 구체적으로 설명될 때만 WARN 처리한다."
+      ],
+      "deduction": 4
+    }
+  ]
+}

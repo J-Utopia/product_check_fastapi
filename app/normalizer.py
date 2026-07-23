@@ -228,7 +228,10 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
         meals = [_event_from_place(x) for x in _as_list(day.get("listMealPlace")) if isinstance(x, dict)]
         guides = [_event_from_place(x) for x in _as_list(day.get("listGuidePlace")) if isinstance(x, dict)]
         transports = [_event_from_place(x) for x in _as_list(day.get("listTransportPlace")) if isinstance(x, dict)]
-        others = [_event_from_place(x) for x in _as_list(day.get("ortherActions")) if isinstance(x, dict)]
+        other_actions = day.get("otherActions")
+        if other_actions is None:
+            other_actions = day.get("ortherActions")
+        others = [_event_from_place(x) for x in _as_list(other_actions) if isinstance(x, dict)]
         place_names = [event.place_name for event in [*hotel_events, *meals, *guides, *transports, *others] if event.place_name]
         schedule_days.append(
             DaySchedule(

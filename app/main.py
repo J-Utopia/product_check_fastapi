@@ -14,7 +14,14 @@ from fastapi.responses import JSONResponse
 from .auth import HeaderCaptureError
 from .client import ModeTourApiError
 from .config import settings
-from .models import CompactInspectionEnvelope, InspectionEnvelope, RunItineraryRequest
+from .models import (
+    CompactInspectionEnvelope,
+    EvidenceResponse,
+    InspectionEnvelope,
+    InspectionRequest,
+    RunItineraryRequest,
+    V3InspectionResponse,
+)
 from .service import InspectionService, build_default_service
 
 logging.basicConfig(level=logging.INFO)
@@ -109,3 +116,42 @@ def run_itinerary(request: RunItineraryRequest, compact: bool = True) -> JSONRes
                 "result": None,
             },
         )
+
+
+@app.post("/v3/inspections", response_model=V3InspectionResponse)
+async def run_v3_inspection(request: InspectionRequest) -> JSONResponse:
+    try:
+        service = get_service()
+        response = service.run_v3(request)
+        return JSONResponse(status_code=200, content=response.model_dump())
+    except HeaderCaptureError as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "code": "AUTH_CAPTURE_FAILED",
+                "message": "ModeTour 인증 헤더 정보 수집 실패",
+                "group_id": request.group_id,
+                "meta": {"reason": str(exc)},
+                "result": None,
+            },
+        )
+    except ModeTourApiError as exc:
+        return JSONResponse(
+            status_code=502,
+            content={
+                "status": "error",
+                "code": "UPSTREAM_API_FAILED",
+                "message": "ModeTour API 호출 실패",
+                "group_id": request.group_id,
+                "meta": {"reason": str(exc)},
+                "result": None,
+            },
+        )
+
+
+@app.get("/v3/inspections/{inspection_id}/evidence", response_model=EvidenceResponse)
+async def get_v3_inspection_evidence(inspection_id: str, evidence_ids: str) -> JSONResponse:
+    service = get_service()
+    response = service.get_evidence(inspection_id, evidence_ids)
+    return JSONResponse(status_code=200, content=response.model_dump())

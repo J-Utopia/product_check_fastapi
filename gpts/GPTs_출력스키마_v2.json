@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "sections": [
+    "📌 단체번호",
+    "🏷 상품명",
+    "📝 총평",
+    "🎯 점수",
+    "🚨 핵심 문제",
+    "✏ 문안 문제",
+    "🛠 개선 포인트"
+  ],
+  "issue_required_fields": [
+    "충돌 구간",
+    "실제 근거",
+    "수정 방향"
+  ],
+  "rules": {
+    "deterministic": "FastAPI deterministic.results를 그대로 사용하고 재판정하지 않는다.",
+    "semantic": "semantic_packets의 claims, evidence, guards만 사용해 failed, passed, not_evaluated 중 하나로 판정한다.",
+    "no_issue_text": "핵심 문제 없음"
+  }
+}

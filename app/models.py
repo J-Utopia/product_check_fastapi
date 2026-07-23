@@ -6,6 +6,10 @@ from pydantic import BaseModel, Field
 
 
 IssueLevel = Literal["FATAL", "ERROR", "WARN", "INFO"]
+RuleStatus = Literal["passed", "failed", "not_applicable", "not_evaluated"]
+InspectionStatus = Literal["ok", "partial", "error"]
+CacheStatus = Literal["hit", "miss", "partial"]
+Confidence = Literal["high", "medium", "low"]
 
 
 class EvidenceItem(BaseModel):
@@ -249,3 +253,91 @@ class CompactInspectionEnvelope(BaseModel):
 
 class RunItineraryRequest(BaseModel):
     group_id: str
+
+
+class InspectionRequest(BaseModel):
+    group_id: str = Field(pattern=r"^[0-9]{6,12}$")
+    force_refresh: bool = False
+
+
+class InspectionEvidence(BaseModel):
+    evidence_id: str
+    source_endpoint: str | None = None
+    source_path: str
+    excerpt: str
+    day_no: int | None = None
+
+
+class RuleResult(BaseModel):
+    rule_id: str
+    status: RuleStatus
+    level: IssueLevel
+    title: str
+    message: str = ""
+    evidence: list[InspectionEvidence] = Field(default_factory=list)
+    suggestion: str = ""
+    deduction: int = 0
+    confidence: Confidence = "high"
+
+
+class DeterministicResults(BaseModel):
+    issue_count: int
+    results: list[RuleResult] = Field(default_factory=list)
+
+
+class ProductSummary(BaseModel):
+    product_no: str
+    product_code: str | None = None
+    title: str
+    departure_date: str | None = None
+    arrival_date: str | None = None
+    nights: int | None = None
+    days: int | None = None
+    prices: dict[str, int | None] = Field(default_factory=dict)
+
+
+class SemanticPacket(BaseModel):
+    packet_id: str
+    rule_ids: list[str]
+    claims: list[dict[str, Any]] = Field(default_factory=list)
+    evidence: list[InspectionEvidence] = Field(default_factory=list)
+    guards: list[str] = Field(default_factory=list)
+    max_output_issues: int = 3
+
+
+class ScoringSummary(BaseModel):
+    base_score: int = 100
+    deterministic_deduction: int = 0
+
+
+class SourceSummary(BaseModel):
+    source_hash: str
+    rule_version: str
+    prompt_version: str
+    cache_status: CacheStatus
+    fetched_at: str
+
+
+class CollectionPlanSummary(BaseModel):
+    required: list[str] = Field(default_factory=list)
+    conditional: list[str] = Field(default_factory=list)
+    skipped: list[dict[str, str]] = Field(default_factory=list)
+
+
+class V3InspectionResponse(BaseModel):
+    schema_version: str
+    inspection_id: str
+    status: InspectionStatus
+    group_id: str
+    product: ProductSummary
+    deterministic: DeterministicResults
+    semantic_packets: list[SemanticPacket] = Field(default_factory=list)
+    scoring: ScoringSummary
+    source: SourceSummary
+    collection_plan: CollectionPlanSummary
+    warnings: list[str] = Field(default_factory=list)
+
+
+class EvidenceResponse(BaseModel):
+    inspection_id: str
+    evidence: list[InspectionEvidence] = Field(default_factory=list)

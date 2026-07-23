@@ -1,0 +1,237 @@
+openapi: 3.1.0
+info:
+  title: Modetour Itinerary Inspection API
+  version: 3.0.0
+servers:
+  - url: https://YOUR_FASTAPI_HOST
+paths:
+  /v3/inspections:
+    post:
+      operationId: runItineraryInspection
+      summary: 단체번호 기준 일정표 검수 데이터를 수집하고 확정형 검사를 실행한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionRequest'
+      responses:
+        '200':
+          description: 검수 성공 또는 부분 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionResponse'
+        '422':
+          description: 잘못된 단체번호
+        '502':
+          description: 모두투어 핵심 API 호출 실패
+  /v3/inspections/{inspection_id}/evidence:
+    get:
+      operationId: getInspectionEvidence
+      summary: 최종 설명에 추가 근거가 꼭 필요할 때만 상세 근거를 조회한다.
+      parameters:
+        - in: path
+          name: inspection_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: evidence_ids
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 선택한 근거 반환
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceResponse'
+components:
+  schemas:
+    InspectionRequest:
+      type: object
+      additionalProperties: false
+      required: [group_id]
+      properties:
+        group_id:
+          type: string
+          pattern: '^[0-9]{6,12}$'
+        force_refresh:
+          type: boolean
+          default: false
+    InspectionResponse:
+      type: object
+      additionalProperties: false
+      required: [schema_version, inspection_id, status, group_id, product, deterministic, semantic_packets, scoring, source, collection_plan]
+      properties:
+        schema_version:
+          type: string
+        inspection_id:
+          type: string
+        status:
+          type: string
+          enum: [ok, partial, error]
+        group_id:
+          type: string
+        product:
+          $ref: '#/components/schemas/ProductSummary'
+        deterministic:
+          type: object
+          required: [results, issue_count]
+          properties:
+            issue_count:
+              type: integer
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleResult'
+        semantic_packets:
+          type: array
+          items:
+            $ref: '#/components/schemas/SemanticPacket'
+        scoring:
+          type: object
+          required: [base_score, deterministic_deduction]
+          properties:
+            base_score:
+              type: integer
+            deterministic_deduction:
+              type: integer
+        source:
+          type: object
+          required: [source_hash, rule_version, prompt_version, cache_status, fetched_at]
+          properties:
+            source_hash:
+              type: string
+            rule_version:
+              type: string
+            prompt_version:
+              type: string
+            cache_status:
+              type: string
+              enum: [hit, miss, partial]
+            fetched_at:
+              type: string
+        collection_plan:
+          type: object
+          additionalProperties: false
+          required: [required, conditional, skipped]
+          properties:
+            required:
+              type: array
+              items:
+                type: string
+            conditional:
+              type: array
+              items:
+                type: string
+            skipped:
+              type: array
+              items:
+                type: object
+                additionalProperties:
+                  type: string
+        warnings:
+          type: array
+          items:
+            type: string
+    ProductSummary:
+      type: object
+      required: [product_no, title]
+      properties:
+        product_no:
+          type: string
+        product_code:
+          type: [string, 'null']
+        title:
+          type: string
+        departure_date:
+          type: [string, 'null']
+        arrival_date:
+          type: [string, 'null']
+        nights:
+          type: [integer, 'null']
+        days:
+          type: [integer, 'null']
+        prices:
+          type: object
+          additionalProperties:
+            type: [integer, 'null']
+    RuleResult:
+      type: object
+      required: [rule_id, status, level, title, evidence]
+      properties:
+        rule_id:
+          type: string
+        status:
+          type: string
+          enum: [passed, failed, not_applicable, not_evaluated]
+        level:
+          type: string
+          enum: [FATAL, ERROR, WARN, INFO]
+        title:
+          type: string
+        message:
+          type: string
+        suggestion:
+          type: string
+        deduction:
+          type: integer
+        confidence:
+          type: string
+          enum: [high, medium, low]
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'
+    Evidence:
+      type: object
+      required: [evidence_id, source_path, excerpt]
+      properties:
+        evidence_id:
+          type: string
+        source_endpoint:
+          type: [string, 'null']
+        source_path:
+          type: string
+        excerpt:
+          type: string
+        day_no:
+          type: [integer, 'null']
+    SemanticPacket:
+      type: object
+      required: [packet_id, rule_ids, claims, evidence, guards]
+      properties:
+        packet_id:
+          type: string
+        rule_ids:
+          type: array
+          items:
+            type: string
+        claims:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'
+        guards:
+          type: array
+          items:
+            type: string
+        max_output_issues:
+          type: integer
+    EvidenceResponse:
+      type: object
+      required: [inspection_id, evidence]
+      properties:
+        inspection_id:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'

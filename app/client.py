@@ -37,6 +37,7 @@ class ModeTourApiClient:
             EndpointSpec("key_points", "/Package/GetProductKeyPointInfo"),
             EndpointSpec("coupons", "/Coupon/GetPackageCouponList"),
         )
+        self._endpoint_by_name = {endpoint.name: endpoint for endpoint in self._endpoints}
 
     def _headers_for_product(self, product_no: str) -> dict[str, str]:
         headers = dict(self._base_headers)
@@ -47,11 +48,22 @@ class ModeTourApiClient:
         url = f"{self._settings.base_url}{spec.path}"
         headers = self._headers_for_product(product_no)
         logger.info("Fetching %s for productNo=%s", spec.name, product_no)
+        started_at = time.perf_counter()
         response = requests.get(
             url,
             params={"productNo": product_no},
             headers=headers,
             timeout=self._settings.request_timeout_seconds,
+        )
+        elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+        content_length = len(response.content)
+        logger.info(
+            "ModeTour endpoint metric endpoint=%s productNo=%s status_code=%d elapsed_ms=%d content_length=%d",
+            spec.name,
+            product_no,
+            response.status_code,
+            elapsed_ms,
+            content_length,
         )
         if not response.ok:
             raise ModeTourApiError(
@@ -62,14 +74,15 @@ class ModeTourApiClient:
             raise ModeTourApiError(f"{spec.name} returned an unexpected response shape.")
         return data["result"]
 
-    def fetch_all(self, product_no: str) -> dict[str, Any]:
+    def fetch_endpoints(self, product_no: str, endpoint_names: tuple[str, ...]) -> dict[str, Any]:
         started_at = time.perf_counter()
         results: dict[str, Any] = {}
-        max_workers = min(len(self._endpoints), 8)
+        endpoints = tuple(self._endpoint_by_name[name] for name in endpoint_names)
+        max_workers = min(len(endpoints), 8)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_spec = {
-                executor.submit(self._fetch_one, spec, product_no): spec for spec in self._endpoints
+                executor.submit(self._fetch_one, spec, product_no): spec for spec in endpoints
             }
             try:
                 for future in concurrent.futures.as_completed(future_to_spec):
@@ -82,4 +95,10 @@ class ModeTourApiClient:
 
         elapsed = time.perf_counter() - started_at
         logger.info("Fetched %s upstream endpoints for productNo=%s in %.2fs", len(results), product_no, elapsed)
-        return {spec.name: results[spec.name] for spec in self._endpoints}
+        return {spec.name: results[spec.name] for spec in endpoints}
+
+    def fetch_core(self, product_no: str) -> dict[str, Any]:
+        return self.fetch_endpoints(product_no, ("package_info", "schedule", "detail", "key_points"))
+
+    def fetch_all(self, product_no: str) -> dict[str, Any]:
+        return self.fetch_endpoints(product_no, tuple(spec.name for spec in self._endpoints))
