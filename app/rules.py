@@ -54,6 +54,7 @@ HOTEL_MARKETING_TOKENS = (
 )
 HOTEL_THEME_TOKENS = ("캡슐", "유리", "별채", "풀빌라", "초원", "온천", "글램핑", "프리미엄", "리조트")
 TEXT_REPLACEMENT_PATTERNS = ("�", "占")
+KEY_POINT_TITLE_MARKERS = ("<", ">", "#")
 
 
 def _excerpt(value: str) -> str:
@@ -182,6 +183,29 @@ def _extract_duration_claims(values: Iterable[str]) -> dict[str, set[int]]:
                 continue
             claims.setdefault(normalized_name, set()).add(int(minutes_text))
     return claims
+
+
+def _has_key_point_content(product: NormalizedProduct) -> bool:
+    structured_values = [
+        *product.special_benefits,
+        *product.sightseeings,
+        *product.key_point_hotels,
+        *product.key_point_meals,
+        *product.key_point_golfs,
+        *product.product_point_items,
+        *product.top_badges,
+        *product.hashtags,
+        product.product_point_text,
+        product.key_point_leader_guild,
+        product.traveler_insurance_text,
+        product.expected_tour_mileage_text,
+        product.business_guarantee,
+        product.product_score,
+        product.selling_price,
+    ]
+    if any(_compact_space(value) for value in structured_values):
+        return True
+    return any(marker in product.title for marker in KEY_POINT_TITLE_MARKERS)
 
 
 def _score(issues: list[Issue]) -> QualityScore:
@@ -498,15 +522,7 @@ class RuleEngine:
 
     def _validate_key_points(self, product: NormalizedProduct) -> list[Issue]:
         issues: list[Issue] = []
-        if not any(
-            [
-                product.special_benefits,
-                product.sightseeings,
-                product.key_point_hotels,
-                product.key_point_meals,
-                product.key_point_golfs,
-            ]
-        ):
+        if not _has_key_point_content(product):
             issues.append(
                 _issue(
                     "KP-001",
