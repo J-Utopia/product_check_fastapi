@@ -138,6 +138,18 @@ def test_run_v3_returns_core_collection_plan_normal_case() -> None:
     assert response.inspection_context["daily_schedule"]["days"][0]["day_no"] == 1
 
 
+def test_run_v3_includes_text_quality_semantic_packet_normal_case() -> None:
+    service = InspectionService(FakeClient())
+
+    response = service.run_v3(InspectionRequest(group_id="123456"))
+    packet = next(packet for packet in response.semantic_packets if "SEM-TEXT-001" in packet.rule_ids)
+
+    assert packet.claims
+    assert packet.evidence
+    assert any("오타" in guard for guard in packet.guards)
+    assert any(claim["source_path"] == "product.title" for claim in packet.claims)
+
+
 def test_run_v3_cache_hit_failure_case_avoids_second_fetch() -> None:
     client = FakeClient()
     service = InspectionService(client)

@@ -24,6 +24,11 @@ SEMANTIC_GUARDS = {
         "더 좋은 표현이 가능하다는 이유만으로 오류 처리하지 않는다.",
         "실제 오해 가능성이 구체적으로 설명될 때만 WARN 처리한다.",
     ],
+    "SEM-TEXT-001": [
+        "단순 취향 차이나 문체 개선을 오류로 처리하지 않는다.",
+        "오타, 맞춤법, 띄어쓰기, 외래어·영문 표기, 깨진 문자, 중복 문구처럼 고객 화면에 그대로 노출되는 문제만 WARN 처리한다.",
+        "상품명, 지명, 호텔명, 항공사명, 브랜드명은 공식 표기 가능성을 먼저 고려한다.",
+    ],
 }
 
 
@@ -116,6 +121,40 @@ def build_semantic_packets(product: NormalizedProduct) -> list[SemanticPacket]:
                 claims=[{"claim_id": "claim-copy-1", "text": copy_text[:500], "source_path": "copy_quality.targets"}],
                 evidence=[_evidence("copy-quality-text", "copy_quality.targets", copy_text)],
                 guards=SEMANTIC_GUARDS["SEM-COPY-001"],
+            )
+        )
+
+    text_quality_targets = [
+        ("product.title", product.title),
+        ("product.group_brief_keywords", " ".join(product.group_brief_keywords)),
+        ("product.hashtags", " ".join(product.hashtags)),
+        ("meeting.text", " | ".join(value for value in [product.meeting_place_text, product.meeting_info_text] if value)),
+        ("key_points.text", product.product_point_text),
+        ("included.text", product.included_text),
+        ("excluded.text", product.excluded_text),
+        ("notice.text", product.notice_text),
+    ]
+    text_claims = [
+        {
+            "claim_id": f"claim-text-{index + 1}",
+            "text": text[:300],
+            "source_path": source_path,
+        }
+        for index, (source_path, text) in enumerate(text_quality_targets)
+        if text
+    ]
+    if text_claims:
+        text_values = [str(claim["text"]) for claim in text_claims]
+        packets.append(
+            SemanticPacket(
+                packet_id=_packet_id("SEM-TEXT-001", product.product_no, text_values),
+                rule_ids=["SEM-TEXT-001"],
+                claims=text_claims[:8],
+                evidence=[
+                    _evidence(f"text-quality-{index + 1}", str(claim["source_path"]), str(claim["text"]))
+                    for index, claim in enumerate(text_claims[:8])
+                ],
+                guards=SEMANTIC_GUARDS["SEM-TEXT-001"],
             )
         )
 

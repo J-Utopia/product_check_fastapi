@@ -17,6 +17,7 @@
   "rules": {
     "deterministic": "FastAPI deterministic.results를 그대로 사용하고 재판정하지 않는다.",
     "semantic": "semantic_packets의 claims, evidence, guards만 사용해 failed, passed, not_evaluated 중 하나로 판정한다.",
+    "text_quality": "문안 문제에는 오타, 맞춤법, 띄어쓰기, 외래어 표기, 영문 표기, 깨진 문자, 중복 문구처럼 고객 화면에 그대로 노출되는 표기 품질 문제를 작성한다.",
     "no_issue_text": "핵심 문제 없음",
     "hide_internal_terms": "최종 사용자 답변에는 API명, JSON 필드명, packet명, rule_id, passed/failed/not_evaluated 같은 내부 판정명을 노출하지 않는다.",
     "tone": "일정표 담당자가 이해할 수 있는 자연스러운 한국어 업무 문장으로 작성한다."
