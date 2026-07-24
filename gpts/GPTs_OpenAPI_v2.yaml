@@ -64,7 +64,7 @@ components:
     InspectionResponse:
       type: object
       additionalProperties: false
-      required: [schema_version, inspection_id, status, group_id, product, deterministic, semantic_packets, scoring, source, collection_plan]
+      required: [schema_version, inspection_id, status, group_id, product, inspection_context, deterministic, semantic_packets, scoring, source, collection_plan]
       properties:
         schema_version:
           type: string
@@ -77,6 +77,10 @@ components:
           type: string
         product:
           $ref: '#/components/schemas/ProductSummary'
+        inspection_context:
+          type: object
+          additionalProperties: true
+          description: 화면 영역별 검수 컨텍스트. GPT는 이 값을 기준으로 상품명, 상단 아이콘, 가격, 핵심포인트, 포함/불포함, 미팅정보, 일자별 일정을 비교한다.
         deterministic:
           type: object
           required: [results, issue_count]

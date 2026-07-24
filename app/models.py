@@ -358,6 +358,7 @@ class V3InspectionResponse(BaseModel):
     status: InspectionStatus
     group_id: str
     product: ProductSummary
+    inspection_context: dict[str, Any] = Field(default_factory=dict)
     deterministic: DeterministicResults
     semantic_packets: list[SemanticPacket] = Field(default_factory=list)
     scoring: ScoringSummary

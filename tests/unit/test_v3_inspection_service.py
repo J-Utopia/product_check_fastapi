@@ -89,6 +89,11 @@ def test_run_v3_returns_core_collection_plan_normal_case() -> None:
         "payment_method": "현지지불",
     }
     assert response.product.prices["selling_price_local_join"] == 0
+    assert response.inspection_context["top_area"]["icons"]["shopping_count"] == 3
+    assert response.inspection_context["main_schedule"]["visit_cities"] == ["서울", "부산"]
+    assert response.inspection_context["prices"]["guide_fee"]["child"] == 60
+    assert response.inspection_context["included_excluded"]["included_text"] == "왕복항공 포함"
+    assert response.inspection_context["daily_schedule"]["days"][0]["day_no"] == 1
 
 
 def test_run_v3_cache_hit_failure_case_avoids_second_fetch() -> None:

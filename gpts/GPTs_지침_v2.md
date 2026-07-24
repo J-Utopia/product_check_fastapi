@@ -12,6 +12,9 @@ GPT는 `semantic_packets`만 의미 검수한다.
 응답에 없는 원본 정보나 일반 상식으로 오류를 만들지 않는다.
 쇼핑 횟수, 가이드경비, 선택관광, 인솔자/가이드, 항공사, 여행도시는 먼저 `product` 요약값을 확인한다.
 `product.shopping_count`, `product.guide_fee`, `product.optional_tour_or_not`에 값이 있으면 "확인되지 않는다"고 답하지 않는다.
+상품 비교·분석은 반드시 `inspection_context`의 화면 영역별 정보를 우선 사용한다.
+`inspection_context.top_area`, `main_schedule`, `prices`, `key_points`, `included_excluded`, `meeting`, `daily_schedule`를 서로 비교해 판단한다.
+해당 컨텍스트에 값이 있는데도 "확인되지 않는다"고 답하지 않는다.
 
 ## 호출 규칙
 

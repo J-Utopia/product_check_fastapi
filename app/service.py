@@ -193,6 +193,7 @@ class InspectionService:
                     "selling_price_local_join": normalized.selling_price_local_join,
                 },
             ),
+            inspection_context=self._build_inspection_context(normalized),
             deterministic=DeterministicResults(
                 issue_count=sum(1 for result in deterministic_results if result.status == "failed"),
                 results=deterministic_results,
@@ -374,6 +375,117 @@ class InspectionService:
         if flags:
             summary += f"\n주요 상태: {', '.join(flags)}"
         return summary
+
+    def _build_inspection_context(self, product: NormalizedProduct) -> dict[str, Any]:
+        return {
+            "top_area": {
+                "source_endpoints": ["GetPackageInfo", "GetProductDetailInfo"],
+                "product_no": product.product_no,
+                "product_code": product.product_code,
+                "computed_product_code": product.computed_product_code,
+                "title": product.title,
+                "prefixes": product.prefixes,
+                "themes": product.themes,
+                "group_brief_keywords": product.group_brief_keywords,
+                "display_price_adult": product.display_price_adult,
+                "before_discount_price_adult": product.before_discount_price_adult,
+                "icons": {
+                    "period": f"{product.nights}박{product.days}일"
+                    if product.nights is not None and product.days is not None
+                    else None,
+                    "airline": product.departure_airline_name,
+                    "shopping_count": product.shopping_count,
+                    "guide_fee": self._guide_fee_context(product),
+                    "optional_tour_or_not": product.optional_tour_or_not,
+                    "leader_yn": product.leader_yn,
+                    "guide_yn": product.guide_yn,
+                    "direct_flight": product.direct_flight,
+                },
+            },
+            "main_schedule": {
+                "source_endpoints": ["GetProductDetailInfo", "GetPackageInfo", "GetScheduleList"],
+                "travel_period_text": product.travel_period_text,
+                "nights": product.nights,
+                "days": product.days,
+                "departure_date": product.departure_date,
+                "arrival_date": product.arrival_date,
+                "departure_airline_name": product.departure_airline_name,
+                "return_airline_name": product.return_airline_name,
+                "departure_flight": product.departure_flight,
+                "return_flight": product.return_flight,
+                "departure_city": product.air_segments[0].departure_city_name if product.air_segments else None,
+                "arrival_city": product.air_segments[-1].arrival_city_name if product.air_segments else None,
+                "visit_cities": product.visit_cities,
+                "shopping_count": product.shopping_count,
+                "optional_tour_or_not": product.optional_tour_or_not,
+                "guide_fee": self._guide_fee_context(product),
+            },
+            "prices": {
+                "source_endpoints": ["GetPackageInfo", "GetProductDetailInfo"],
+                "display_price_adult": product.display_price_adult,
+                "before_discount_price_adult": product.before_discount_price_adult,
+                "selling_price_adult": product.selling_price_adult,
+                "selling_price_child_no_bed": product.selling_price_child_no_bed,
+                "selling_price_child_extra_bed": product.selling_price_child_extra_bed,
+                "selling_price_infant": product.selling_price_infant,
+                "selling_price_local_join": product.selling_price_local_join,
+                "guide_fee": self._guide_fee_context(product),
+            },
+            "key_points": {
+                "source_endpoints": ["GetProductKeyPointInfo", "GetProductDetailInfo"],
+                "product_point": {
+                    "raw_text": product.product_point_text,
+                    "items": product.product_point_items,
+                },
+                "group_special_notes": product.group_brief_keywords,
+                "special_benefits": product.special_benefits,
+                "tourism": product.sightseeings,
+                "golf": product.key_point_golfs,
+                "hotel": product.key_point_hotels,
+                "meal": product.key_point_meals,
+                "leader_guide": {
+                    "text": product.key_point_leader_guild,
+                    "guide_status": product.guide_status,
+                    "leader_status": product.leader_status,
+                    "guide_info": product.guide_info,
+                },
+                "insurance": product.traveler_insurance_text,
+                "mileage": product.expected_tour_mileage_text,
+                "business_guarantee": product.business_guarantee,
+                "product_score": product.product_score,
+            },
+            "included_excluded": {
+                "source_endpoints": ["GetProductDetailInfo"],
+                "included_text": product.included_text,
+                "included_items": product.included_items,
+                "excluded_text": product.excluded_text,
+                "excluded_items": product.excluded_items,
+            },
+            "meeting": {
+                "source_endpoints": ["GetProductDetailInfo"],
+                "meeting_time": product.meeting_time,
+                "meeting_place_text": product.meeting_place_text,
+                "meeting_info_text": product.meeting_info_text,
+            },
+            "daily_schedule": {
+                "source_endpoints": ["GetScheduleList"],
+                "days": [day.model_dump() for day in product.schedule_days],
+            },
+            "raw_text_areas": {
+                "notice_text": product.notice_text,
+                "shopping_text": product.shopping_text,
+            },
+        }
+
+    def _guide_fee_context(self, product: NormalizedProduct) -> dict[str, int | str | None]:
+        return {
+            "required": product.local_required_expense_or_not,
+            "currency": product.guide_fee_currency,
+            "adult": product.guide_fee_adult,
+            "child": product.guide_fee_child,
+            "infant": product.guide_fee_infant,
+            "payment_method": "현지지불" if product.local_required_expense_or_not == "Y" else None,
+        }
 
     def _source_hash(self, raw: dict[str, object]) -> str:
         payload = json.dumps(raw, ensure_ascii=False, sort_keys=True, default=str)
