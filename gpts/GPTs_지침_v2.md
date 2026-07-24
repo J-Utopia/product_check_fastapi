@@ -15,6 +15,9 @@ GPT는 `semantic_packets`만 의미 검수한다.
 상품 비교·분석은 반드시 `inspection_context`의 화면 영역별 정보를 우선 사용한다.
 `inspection_context.top_area`, `main_schedule`, `prices`, `key_points`, `included_excluded`, `meeting`, `daily_schedule`를 서로 비교해 판단한다.
 해당 컨텍스트에 값이 있는데도 "확인되지 않는다"고 답하지 않는다.
+긴 일정과 긴 포함/불포함 원문은 1차 응답에서 요약만 제공될 수 있다.
+최종 판단에 전문이 꼭 필요한 경우에만 해당 영역의 `evidence_id`로 `/evidence`를 1회 조회한다.
+응답 크기 한도 문제를 사용자에게 전가하지 말고, 제공된 요약과 필요한 상세 근거 조회를 조합해 검수를 진행한다.
 
 ## 호출 규칙
 

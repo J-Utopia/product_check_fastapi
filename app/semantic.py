@@ -36,7 +36,7 @@ def _evidence(evidence_id: str, source_path: str, excerpt: str, day_no: int | No
     return InspectionEvidence(
         evidence_id=evidence_id,
         source_path=source_path,
-        excerpt=excerpt[:300],
+        excerpt=excerpt[:180],
         day_no=day_no,
     )
 
@@ -67,7 +67,7 @@ def build_semantic_packets(product: NormalizedProduct) -> list[SemanticPacket]:
                 packet_id=_packet_id("SEM-POINT-001", product.product_no, [claim["text"] for claim in point_claims]),
                 rule_ids=["SEM-POINT-001"],
                 claims=point_claims,
-                evidence=schedule_evidence[:20],
+                evidence=schedule_evidence[:8],
                 guards=SEMANTIC_GUARDS["SEM-POINT-001"],
             )
         )
@@ -79,7 +79,7 @@ def build_semantic_packets(product: NormalizedProduct) -> list[SemanticPacket]:
                 packet_id=_packet_id("SEM-TITLE-PLACE-001", product.product_no, [product.title]),
                 rule_ids=["SEM-TITLE-PLACE-001"],
                 claims=title_claims,
-                evidence=schedule_evidence[:20],
+                evidence=schedule_evidence[:8],
                 guards=SEMANTIC_GUARDS["SEM-TITLE-PLACE-001"],
             )
         )
@@ -90,8 +90,8 @@ def build_semantic_packets(product: NormalizedProduct) -> list[SemanticPacket]:
                 packet_id=_packet_id("SEM-INEX-001", product.product_no, [product.included_text, product.excluded_text]),
                 rule_ids=["SEM-INEX-001"],
                 claims=[
-                    {"claim_id": "claim-included", "text": product.included_text[:500], "source_path": "included.plain_text"},
-                    {"claim_id": "claim-excluded", "text": product.excluded_text[:500], "source_path": "excluded.plain_text"},
+                    {"claim_id": "claim-included", "text": product.included_text[:300], "source_path": "included.plain_text"},
+                    {"claim_id": "claim-excluded", "text": product.excluded_text[:300], "source_path": "excluded.plain_text"},
                 ],
                 evidence=[
                     _evidence("included-text", "included.plain_text", product.included_text),
@@ -113,7 +113,7 @@ def build_semantic_packets(product: NormalizedProduct) -> list[SemanticPacket]:
             SemanticPacket(
                 packet_id=_packet_id("SEM-COPY-001", product.product_no, [copy_text]),
                 rule_ids=["SEM-COPY-001"],
-                claims=[{"claim_id": "claim-copy-1", "text": copy_text[:800], "source_path": "copy_quality.targets"}],
+                claims=[{"claim_id": "claim-copy-1", "text": copy_text[:500], "source_path": "copy_quality.targets"}],
                 evidence=[_evidence("copy-quality-text", "copy_quality.targets", copy_text)],
                 guards=SEMANTIC_GUARDS["SEM-COPY-001"],
             )

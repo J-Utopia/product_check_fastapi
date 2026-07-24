@@ -55,6 +55,7 @@ HOTEL_MARKETING_TOKENS = (
 HOTEL_THEME_TOKENS = ("캡슐", "유리", "별채", "풀빌라", "초원", "온천", "글램핑", "프리미엄", "리조트")
 TEXT_REPLACEMENT_PATTERNS = ("�", "占")
 KEY_POINT_TITLE_MARKERS = ("<", ">", "#")
+RULE_TEXT_LIMIT = 400
 
 
 def _excerpt(value: str) -> str:
@@ -135,7 +136,7 @@ def _joined_day_texts(product: NormalizedProduct) -> str:
         chunks.extend(day.place_names)
         chunks.append(day.schedule_hotel_text)
         for event in [*day.meals, *day.guides, *day.hotels, *day.transports, *day.others]:
-            chunks.extend([event.place_name, event.service_name, event.summary, event.detail])
+            chunks.extend([event.place_name, event.service_name, event.summary, _rule_text(event.detail)])
     return " | ".join(chunk for chunk in chunks if chunk)
 
 
@@ -172,6 +173,13 @@ def _parse_duration(value: str | None) -> int | None:
 
 def _compact_space(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
+
+
+def _rule_text(value: str) -> str:
+    compact = _compact_space(value)
+    if len(compact) <= RULE_TEXT_LIMIT:
+        return compact
+    return compact[:RULE_TEXT_LIMIT]
 
 
 def _extract_duration_claims(values: Iterable[str]) -> dict[str, set[int]]:
@@ -796,7 +804,10 @@ class RuleEngine:
                     day.schedule_hotel_text,
                     " ".join(day.route_headers),
                     " ".join(day.place_names),
-                    " ".join(item.service_name + item.summary + item.detail for item in [*day.meals, *day.guides, *day.hotels, *day.transports, *day.others]),
+                    " ".join(
+                        item.service_name + item.summary + _rule_text(item.detail)
+                        for item in [*day.meals, *day.guides, *day.hotels, *day.transports, *day.others]
+                    ),
                 ]
             )
             if _contains_any(day_text, OPTION_PRESENT_PATTERNS) and product.optional_tour_or_not == "N":

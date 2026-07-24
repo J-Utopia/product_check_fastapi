@@ -3,7 +3,7 @@ info:
   title: Modetour Itinerary Inspection API
   version: 3.0.0
 servers:
-  - url: https://YOUR_FASTAPI_HOST
+  - url: https://product-check-fastapi.onrender.com
 paths:
   /v3/inspections:
     post:
@@ -80,7 +80,7 @@ components:
         inspection_context:
           type: object
           additionalProperties: true
-          description: 화면 영역별 검수 컨텍스트. GPT는 이 값을 기준으로 상품명, 상단 아이콘, 가격, 핵심포인트, 포함/불포함, 미팅정보, 일자별 일정을 비교한다.
+          description: 화면 영역별 검수 컨텍스트. GPT는 이 값을 기준으로 상품명, 상단 아이콘, 가격, 핵심포인트, 포함/불포함, 미팅정보, 일자별 일정을 비교한다. 긴 원문은 evidence_id로 분리되며 필요한 경우 evidence endpoint로 조회한다.
         deterministic:
           type: object
           required: [results, issue_count]

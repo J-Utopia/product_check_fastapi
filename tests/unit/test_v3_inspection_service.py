@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -21,6 +22,47 @@ class FakeClient:
         return self._raw(product_no)
 
     def _raw(self, product_no: str) -> dict[str, Any]:
+        if product_no == "999999":
+            long_detail = "상세 일정 설명 " * 200
+            return {
+                "package_info": {
+                    "pName": "장기 일정 19박 20일",
+                    "date": {"sdate": "2026-01-01", "edate": "2026-01-20", "night": 19, "days": 20},
+                    "price": {"adult": 1000000},
+                },
+                "detail": {
+                    "productName": "장기 일정 19박 20일",
+                    "departureDate": "2026-01-01",
+                    "arrivalDate": "2026-01-20",
+                    "travelNight": 19,
+                    "travelDays": 20,
+                    "travelPeriod": "19박 20일",
+                    "includedNote": "포함사항 " * 500,
+                    "unincludedNote": "불포함사항 " * 500,
+                    "meetingPlace2": "미팅장소 " * 500,
+                },
+                "schedule": {
+                    "scheduleItemList": [
+                        {
+                            "first": day_no,
+                            "date": f"2026-01-{day_no:02d}",
+                            "placeHeader": [f"도시{day_no}"],
+                            "otherActions": [
+                                {
+                                    "itiPlaceName": f"관광지{day_no}-{index}",
+                                    "itiServiceName": "관광",
+                                    "itiSummaryDes": f"{day_no}일차 관광 {index}",
+                                    "itiDetailDes": long_detail,
+                                    "itiSeq": index,
+                                }
+                                for index in range(8)
+                            ],
+                        }
+                        for day_no in range(1, 21)
+                    ]
+                },
+                "key_points": {"specialBenefits": ["장기 일정 핵심포인트"]},
+            }
         return {
             "package_info": {
                 "pName": "테스트 1박 2일",
@@ -122,3 +164,18 @@ def test_get_evidence_edge_case_returns_requested_ids_only() -> None:
 
     assert evidence_response.inspection_id == response.inspection_id
     assert [item.evidence_id for item in evidence_response.evidence] == [evidence_id]
+
+
+def test_run_v3_keeps_long_schedule_response_bounded_edge_case() -> None:
+    service = InspectionService(FakeClient())
+
+    response = service.run_v3(InspectionRequest(group_id="999999"))
+    payload_size = len(json.dumps(response.model_dump(), ensure_ascii=False, default=str).encode("utf-8"))
+    first_day_evidence_id = response.inspection_context["daily_schedule"]["days"][0]["evidence_id"]
+    evidence_response = service.get_evidence(response.inspection_id, first_day_evidence_id)
+
+    assert payload_size < 60_000
+    assert response.inspection_context["daily_schedule"]["day_count"] == 20
+    assert "itiDetailDes" not in json.dumps(response.inspection_context, ensure_ascii=False)
+    assert evidence_response.evidence
+    assert "상세 일정 설명" in evidence_response.evidence[0].excerpt

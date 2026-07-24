@@ -35,6 +35,9 @@ from .rules import RuleEngine
 from .semantic import build_semantic_packets
 
 logger = logging.getLogger(__name__)
+V3_RESPONSE_WARNING_BYTES = 60_000
+MAX_TEXT_EXCERPT_CHARS = 500
+MAX_LIST_ITEMS = 20
 
 
 class FetchClient(Protocol):
@@ -182,7 +185,7 @@ class InspectionService:
                     "payment_method": "현지지불" if normalized.local_required_expense_or_not == "Y" else None,
                 },
                 meeting_time=normalized.meeting_time,
-                meeting_place_text=normalized.meeting_place_text,
+                meeting_place_text=self._clip(normalized.meeting_place_text),
                 prices={
                     "display_price_adult": normalized.display_price_adult,
                     "before_discount_price_adult": normalized.before_discount_price_adult,
@@ -221,8 +224,9 @@ class InspectionService:
             ),
             warnings=[],
         )
+        response = self._with_size_warning(response)
         self._v3_cache[cache_key] = response
-        self._store_evidence(response)
+        self._store_evidence(response, normalized)
         return response
 
     def get_evidence(self, inspection_id: str, evidence_ids: str) -> EvidenceResponse:
@@ -377,6 +381,10 @@ class InspectionService:
         return summary
 
     def _build_inspection_context(self, product: NormalizedProduct) -> dict[str, Any]:
+        included_evidence_id = f"included-full-{product.product_no}"
+        excluded_evidence_id = f"excluded-full-{product.product_no}"
+        meeting_evidence_id = f"meeting-full-{product.product_no}"
+        schedule_evidence_ids = [f"schedule-day-{day.day_no}-full" for day in product.schedule_days]
         return {
             "top_area": {
                 "source_endpoints": ["GetPackageInfo", "GetProductDetailInfo"],
@@ -434,47 +442,79 @@ class InspectionService:
             "key_points": {
                 "source_endpoints": ["GetProductKeyPointInfo", "GetProductDetailInfo"],
                 "product_point": {
-                    "raw_text": product.product_point_text,
-                    "items": product.product_point_items,
+                    "raw_text": self._clip(product.product_point_text),
+                    "items": self._limit_list(product.product_point_items),
                 },
-                "group_special_notes": product.group_brief_keywords,
-                "special_benefits": product.special_benefits,
-                "tourism": product.sightseeings,
-                "golf": product.key_point_golfs,
-                "hotel": product.key_point_hotels,
-                "meal": product.key_point_meals,
+                "group_special_notes": self._limit_list(product.group_brief_keywords),
+                "special_benefits": self._limit_list(product.special_benefits),
+                "tourism": self._limit_list(product.sightseeings),
+                "golf": self._limit_list(product.key_point_golfs),
+                "hotel": self._limit_list(product.key_point_hotels),
+                "meal": self._limit_list(product.key_point_meals),
                 "leader_guide": {
-                    "text": product.key_point_leader_guild,
+                    "text": self._clip(product.key_point_leader_guild),
                     "guide_status": product.guide_status,
                     "leader_status": product.leader_status,
-                    "guide_info": product.guide_info,
+                    "guide_info": product.guide_info[:5],
                 },
-                "insurance": product.traveler_insurance_text,
-                "mileage": product.expected_tour_mileage_text,
-                "business_guarantee": product.business_guarantee,
+                "insurance": self._clip(product.traveler_insurance_text),
+                "mileage": self._clip(product.expected_tour_mileage_text),
+                "business_guarantee": self._clip(product.business_guarantee),
                 "product_score": product.product_score,
             },
             "included_excluded": {
                 "source_endpoints": ["GetProductDetailInfo"],
-                "included_text": product.included_text,
-                "included_items": product.included_items,
-                "excluded_text": product.excluded_text,
-                "excluded_items": product.excluded_items,
+                "included_text": self._clip(product.included_text),
+                "included_evidence_id": included_evidence_id if product.included_text else None,
+                "included_items": self._limit_list(product.included_items),
+                "excluded_text": self._clip(product.excluded_text),
+                "excluded_evidence_id": excluded_evidence_id if product.excluded_text else None,
+                "excluded_items": self._limit_list(product.excluded_items),
             },
             "meeting": {
                 "source_endpoints": ["GetProductDetailInfo"],
                 "meeting_time": product.meeting_time,
-                "meeting_place_text": product.meeting_place_text,
-                "meeting_info_text": product.meeting_info_text,
+                "meeting_place_text": self._clip(product.meeting_place_text),
+                "meeting_info_text": self._clip(product.meeting_info_text),
+                "meeting_evidence_id": meeting_evidence_id
+                if product.meeting_place_text or product.meeting_info_text
+                else None,
             },
             "daily_schedule": {
                 "source_endpoints": ["GetScheduleList"],
-                "days": [day.model_dump() for day in product.schedule_days],
+                "day_count": len(product.schedule_days),
+                "days": [self._compact_day(day, evidence_id) for day, evidence_id in zip(product.schedule_days, schedule_evidence_ids)],
+                "detail_policy": "Full day details are available through /v3/inspections/{inspection_id}/evidence by evidence_id.",
             },
             "raw_text_areas": {
-                "notice_text": product.notice_text,
-                "shopping_text": product.shopping_text,
+                "notice_text": self._clip(product.notice_text),
+                "shopping_text": self._clip(product.shopping_text),
             },
+        }
+
+    def _compact_day(self, day: Any, evidence_id: str) -> dict[str, Any]:
+        events = [*day.meals, *day.guides, *day.hotels, *day.transports, *day.others]
+        highlights = [
+            text
+            for text in [
+                day.schedule_hotel_text,
+                *day.route_headers,
+                *day.place_names[:8],
+                *[event.summary for event in events if event.summary],
+                *[event.place_name for event in events if event.place_name],
+            ]
+            if text
+        ]
+        return {
+            "day_no": day.day_no,
+            "date": day.date,
+            "route_headers": self._limit_list(day.route_headers, limit=8),
+            "place_names": self._limit_list(day.place_names, limit=12),
+            "highlights": self._limit_list(highlights, limit=16),
+            "event_count": len(events) + len(day.air),
+            "has_air": bool(day.air),
+            "has_hotel": bool(day.hotels or day.schedule_hotel_text),
+            "evidence_id": evidence_id,
         }
 
     def _guide_fee_context(self, product: NormalizedProduct) -> dict[str, int | str | None]:
@@ -486,6 +526,26 @@ class InspectionService:
             "infant": product.guide_fee_infant,
             "payment_method": "현지지불" if product.local_required_expense_or_not == "Y" else None,
         }
+
+    def _clip(self, value: str, limit: int = MAX_TEXT_EXCERPT_CHARS) -> str:
+        if len(value) <= limit:
+            return value
+        return f"{value[:limit].rstrip()} ... [상세 근거 조회 필요]"
+
+    def _limit_list(self, values: list[str], limit: int = MAX_LIST_ITEMS) -> list[str]:
+        clipped_values = [self._clip(value, limit=180) for value in values]
+        if len(clipped_values) <= limit:
+            return clipped_values
+        return [*clipped_values[:limit], f"... 외 {len(clipped_values) - limit}개"]
+
+    def _with_size_warning(self, response: V3InspectionResponse) -> V3InspectionResponse:
+        size_bytes = len(json.dumps(response.model_dump(), ensure_ascii=False, default=str).encode("utf-8"))
+        warnings = list(response.warnings)
+        if size_bytes > V3_RESPONSE_WARNING_BYTES:
+            warnings.append(
+                f"응답 크기 {size_bytes} bytes. 상세 원문은 evidence endpoint로 조회해야 합니다."
+            )
+        return response.model_copy(update={"warnings": warnings})
 
     def _source_hash(self, raw: dict[str, object]) -> str:
         payload = json.dumps(raw, ensure_ascii=False, sort_keys=True, default=str)
@@ -529,7 +589,7 @@ class InspectionService:
     def _deterministic_deduction(self, results: list[RuleResult]) -> int:
         return sum(result.deduction for result in results if result.status == "failed")
 
-    def _store_evidence(self, response: V3InspectionResponse) -> None:
+    def _store_evidence(self, response: V3InspectionResponse, product: NormalizedProduct) -> None:
         evidence_by_id: dict[str, InspectionEvidence] = {}
         for result in response.deterministic.results:
             for evidence in result.evidence:
@@ -537,6 +597,35 @@ class InspectionService:
         for packet in response.semantic_packets:
             for evidence in packet.evidence:
                 evidence_by_id[evidence.evidence_id] = evidence
+        context = response.inspection_context
+        included = context.get("included_excluded", {})
+        if included.get("included_evidence_id") and product.included_text:
+            evidence_by_id[str(included["included_evidence_id"])] = InspectionEvidence(
+                evidence_id=str(included["included_evidence_id"]),
+                source_path="included_excluded.included_text",
+                excerpt=product.included_text,
+            )
+        if included.get("excluded_evidence_id") and product.excluded_text:
+            evidence_by_id[str(included["excluded_evidence_id"])] = InspectionEvidence(
+                evidence_id=str(included["excluded_evidence_id"]),
+                source_path="included_excluded.excluded_text",
+                excerpt=product.excluded_text,
+            )
+        meeting = context.get("meeting", {})
+        if meeting.get("meeting_evidence_id"):
+            evidence_by_id[str(meeting["meeting_evidence_id"])] = InspectionEvidence(
+                evidence_id=str(meeting["meeting_evidence_id"]),
+                source_path="meeting",
+                excerpt=" | ".join(value for value in [product.meeting_place_text, product.meeting_info_text] if value),
+            )
+        for day in product.schedule_days:
+            evidence_id = f"schedule-day-{day.day_no}-full"
+            evidence_by_id[evidence_id] = InspectionEvidence(
+                evidence_id=evidence_id,
+                source_path=f"daily_schedule.days[{day.day_no}]",
+                excerpt=json.dumps(day.model_dump(), ensure_ascii=False),
+                day_no=day.day_no,
+            )
         self._evidence_by_inspection_id[response.inspection_id] = evidence_by_id
 
 
