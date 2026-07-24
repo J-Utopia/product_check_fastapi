@@ -145,8 +145,26 @@ components:
           type: string
         product_code:
           type: [string, 'null']
+        computed_product_code:
+          type: [string, 'null']
         title:
           type: string
+        prefixes:
+          type: array
+          items:
+            type: string
+        themes:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+        group_brief_keywords:
+          type: array
+          items:
+            type: string
+        travel_period_text:
+          type: [string, 'null']
         departure_date:
           type: [string, 'null']
         arrival_date:
@@ -155,6 +173,34 @@ components:
           type: [integer, 'null']
         days:
           type: [integer, 'null']
+        departure_airline_name:
+          type: [string, 'null']
+        return_airline_name:
+          type: [string, 'null']
+        departure_flight:
+          type: [string, 'null']
+        return_flight:
+          type: [string, 'null']
+        visit_cities:
+          type: array
+          items:
+            type: string
+        shopping_count:
+          type: [integer, 'null']
+        optional_tour_or_not:
+          type: [string, 'null']
+        guide_yn:
+          type: [string, 'null']
+        leader_yn:
+          type: [string, 'null']
+        guide_fee:
+          type: object
+          additionalProperties:
+            type: [integer, string, 'null']
+        meeting_time:
+          type: [string, 'null']
+        meeting_place_text:
+          type: string
         prices:
           type: object
           additionalProperties:

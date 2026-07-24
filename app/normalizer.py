@@ -52,6 +52,13 @@ def _to_int(value: Any) -> int | None:
         return None
 
 
+def _first_not_none(*values: Any) -> Any:
+    for value in values:
+        if value is not None:
+            return value
+    return None
+
+
 def _split_items(text: str) -> list[str]:
     if not text:
         return []
@@ -99,6 +106,17 @@ def _clean_items(items: list[str]) -> list[str]:
     return cleaned
 
 
+def _dedupe(items: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        deduped.append(item)
+    return deduped
+
+
 def _extract_product_point_items(*values: Any) -> list[str]:
     items: list[str] = []
     for value in values:
@@ -141,6 +159,30 @@ def _extract_hashtags(*values: Any) -> list[str]:
         seen.add(normalized)
         deduped.append(normalized)
     return deduped
+
+
+def _extract_hash_keywords(value: Any) -> list[str]:
+    keywords: list[str] = []
+    for item in _extract_strings(value):
+        if "#" not in item:
+            keywords.append(item)
+            continue
+        parts = re.findall(r"#[^#\s]+(?:\s+[^#\s]+)*", item)
+        keywords.extend(part.strip() for part in parts if part.strip())
+    return _clean_items(keywords)
+
+
+def _extract_themes(value: Any) -> list[dict[str, str]]:
+    themes: list[dict[str, str]] = []
+    for item in _as_list(value):
+        if not isinstance(item, dict):
+            continue
+        theme_id = _clean_text(item.get("themeId") or item.get("themeID") or item.get("id"))
+        theme_name = _clean_text(item.get("themeName") or item.get("name") or item.get("title"))
+        if not theme_id and not theme_name:
+            continue
+        themes.append({"theme_id": theme_id, "theme_name": theme_name})
+    return themes
 
 
 def _event_from_place(place: dict[str, Any]) -> ScheduleEvent:
@@ -197,6 +239,19 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
     flight_remarks_raw = raw.get("flight_remarks", [])
     key_points = raw.get("key_points", {})
     package_badges = _extract_strings(package_info.get("badges"))
+    prefixes = _dedupe(
+        _clean_items(
+            [
+                *_extract_strings(package_info.get("prefixes")),
+                *_extract_strings(package_info.get("prefix")),
+                *_extract_strings(package_info.get("prefixPName")),
+                *_extract_strings(package_info.get("badges")),
+                *_extract_strings(detail.get("prefixName")),
+            ]
+        )
+    )
+    group_brief_keywords = _dedupe(_extract_hash_keywords(detail.get("groupBriefKeyword")))
+    visit_cities = [_clean_text(city) for city in _as_list(detail.get("visitCities")) if _clean_text(city)]
     hashtags = _extract_hashtags(
         raw.get("tags"),
         detail.get("tags"),
@@ -304,6 +359,8 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
     included_items = _clean_items(_extract_strings(included_text))
     excluded_items = _clean_items(_extract_strings(excluded_text))
     package_price = package_info.get("price", {}) if isinstance(package_info.get("price"), dict) else {}
+    before_discount = package_info.get("beforeDicount") or package_info.get("beforeDiscount") or {}
+    package_before_discount = before_discount if isinstance(before_discount, dict) else {}
 
     return NormalizedProduct(
         product_no=product_no,
@@ -311,14 +368,19 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
         title=_clean_text(detail.get("productName") or package_info.get("pName")),
         product_code=_clean_text(detail.get("productCode") or package_info.get("pcode")) or None,
         computed_product_code=_clean_text(package_info.get("computedProductCode")) or None,
+        prefixes=prefixes,
+        themes=_extract_themes(package_info.get("themes")),
+        group_brief_keywords=group_brief_keywords,
         top_badges=package_badges,
         hashtags=hashtags,
+        travel_period_text=_clean_text(detail.get("travelPeriod")) or None,
         departure_date=detail.get("departureDate") or package_info.get("date", {}).get("sdate"),
         arrival_date=detail.get("arrivalDate") or package_info.get("date", {}).get("edate"),
         nights=detail.get("travelNight") or package_info.get("date", {}).get("night"),
         days=detail.get("travelDays") or package_info.get("date", {}).get("days"),
         country_names=sorted(country_names),
         city_names=sorted(x for x in city_names if x),
+        visit_cities=visit_cities,
         departure_airline_name=_clean_text(detail.get("departureAirlineName") or package_info.get("air", {}).get("airLineName")) or None,
         return_airline_name=_clean_text(detail.get("arrivalAirlineName")) or None,
         departure_flight=_clean_text(detail.get("departureFlight") or package_info.get("air", {}).get("startAir")) or None,
@@ -330,7 +392,11 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
         shopping_count=detail.get("shoppingTimes", package_info.get("shoppingCount")),
         optional_tour_or_not=_clean_text(detail.get("optionalTourOrNot")) or None,
         local_required_expense_or_not=_clean_text(detail.get("localRequiredExpenseOrNot")) or None,
-        local_required_expense=detail.get("localRequiredExpense"),
+        local_required_expense=_to_int(detail.get("localRequiredExpense")),
+        guide_fee_currency=_clean_text(detail.get("localRequiredExpenseCall")) or None,
+        guide_fee_adult=_to_int(detail.get("localRequiredExpense")),
+        guide_fee_child=_to_int(detail.get("localRequiredExpenseKid")),
+        guide_fee_infant=_to_int(detail.get("localRequiredExpenseToddler")),
         meeting_time=_clean_text(detail.get("meetingTime")) or None,
         meeting_place_text=strip_html(detail.get("meetingPlace2")),
         meeting_info_text=strip_html(detail.get("meetingInfo")),
@@ -349,24 +415,38 @@ def normalize_product(product_no: str, raw: dict[str, Any]) -> NormalizedProduct
             or package_info.get("accumulationExpectedTourMileage")
         ),
         display_price_adult=_to_int(
-            package_price.get("adult")
-            or package_price.get("adultPrice")
-            or package_info.get("adultPrice")
-            or package_info.get("priceAdult")
+            _first_not_none(
+                package_price.get("adult"),
+                package_price.get("adultPrice"),
+                package_info.get("adultPrice"),
+                package_info.get("priceAdult"),
+            )
+        ),
+        before_discount_price_adult=_to_int(
+            _first_not_none(
+                package_before_discount.get("adult"),
+                package_before_discount.get("adultPrice"),
+                package_info.get("beforeDiscountAdultPrice"),
+            )
         ),
         selling_price_adult=_to_int(
-            detail.get("sellingPriceAdultTotalAmount")
-            or detail.get("sellingPriceAdult")
-            or key_points.get("sellingPrice")
+            _first_not_none(
+                detail.get("sellingPriceAdultTotalAmount"),
+                detail.get("sellingPriceAdult"),
+                key_points.get("sellingPrice"),
+            )
         ),
         selling_price_child_no_bed=_to_int(
-            detail.get("sellingPriceKidNTotalAmount") or detail.get("sellingPriceKidN")
+            _first_not_none(detail.get("sellingPriceKidNTotalAmount"), detail.get("sellingPriceKidN"))
         ),
         selling_price_child_extra_bed=_to_int(
-            detail.get("sellingPriceKidETotalAmount") or detail.get("sellingPriceKidE")
+            _first_not_none(detail.get("sellingPriceKidETotalAmount"), detail.get("sellingPriceKidE"))
         ),
         selling_price_infant=_to_int(
-            detail.get("sellingPriceToddlerTotalAmount") or detail.get("sellingPriceToddler")
+            _first_not_none(detail.get("sellingPriceToddlerTotalAmount"), detail.get("sellingPriceToddler"))
+        ),
+        selling_price_local_join=_to_int(
+            _first_not_none(detail.get("sellingPriceLandTotalAmount"), detail.get("sellingPriceLand"))
         ),
         special_benefits=[_clean_text(x) for x in _as_list(key_points.get("specialBenefits")) if _clean_text(x)],
         product_point_text=product_point_text,

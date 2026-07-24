@@ -26,8 +26,14 @@ class FakeClient:
                 "pName": "테스트 1박 2일",
                 "pcode": "PKG",
                 "computedProductCode": "PKG-001",
+                "themes": [{"themeId": "T1", "themeName": "테마"}],
+                "badges": {"prefixes": [{"title": "라이브M"}]},
+                "shoppingCount": 3,
+                "guideYn": "Y",
+                "leaderYn": "N",
                 "date": {"sdate": "2026-01-01", "edate": "2026-01-02", "night": 1, "days": 2},
                 "price": {"adult": 100000},
+                "beforeDicount": {"adult": 120000},
             },
             "detail": {
                 "productName": "테스트 1박 2일",
@@ -36,6 +42,20 @@ class FakeClient:
                 "arrivalDate": "2026-01-02",
                 "travelNight": 1,
                 "travelDays": 2,
+                "travelPeriod": "1박 2일",
+                "departureAirlineName": "테스트항공",
+                "arrivalAirlineName": "테스트항공",
+                "groupBriefKeyword": "#인솔자동반 #전용차량",
+                "visitCities": ["서울", "부산"],
+                "shoppingTimes": 3,
+                "localRequiredExpenseOrNot": "Y",
+                "localRequiredExpenseCall": "USD",
+                "localRequiredExpense": 60,
+                "localRequiredExpenseKid": 60,
+                "localRequiredExpenseToddler": 0,
+                "sellingPriceLandTotalAmount": 0,
+                "meetingPlace": "인천공항",
+                "meetingTime": "09:20",
                 "includedNote": "왕복항공 포함",
                 "unincludedNote": "개인경비 불포함",
             },
@@ -60,6 +80,15 @@ def test_run_v3_returns_core_collection_plan_normal_case() -> None:
     assert response.collection_plan.required == ["package_info", "detail", "schedule", "key_points"]
     assert len(response.collection_plan.required) == 4
     assert response.semantic_packets
+    assert response.product.shopping_count == 3
+    assert response.product.guide_fee == {
+        "currency": "USD",
+        "adult": 60,
+        "child": 60,
+        "infant": 0,
+        "payment_method": "현지지불",
+    }
+    assert response.product.prices["selling_price_local_join"] == 0
 
 
 def test_run_v3_cache_hit_failure_case_avoids_second_fetch() -> None:

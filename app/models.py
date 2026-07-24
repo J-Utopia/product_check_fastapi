@@ -89,14 +89,19 @@ class NormalizedProduct(BaseModel):
     title: str
     product_code: str | None = None
     computed_product_code: str | None = None
+    prefixes: list[str] = Field(default_factory=list)
+    themes: list[dict[str, str]] = Field(default_factory=list)
+    group_brief_keywords: list[str] = Field(default_factory=list)
     top_badges: list[str] = Field(default_factory=list)
     hashtags: list[str] = Field(default_factory=list)
+    travel_period_text: str | None = None
     departure_date: str | None = None
     arrival_date: str | None = None
     nights: int | None = None
     days: int | None = None
     country_names: list[str] = Field(default_factory=list)
     city_names: list[str] = Field(default_factory=list)
+    visit_cities: list[str] = Field(default_factory=list)
     departure_airline_name: str | None = None
     return_airline_name: str | None = None
     departure_flight: str | None = None
@@ -109,6 +114,10 @@ class NormalizedProduct(BaseModel):
     optional_tour_or_not: str | None = None
     local_required_expense_or_not: str | None = None
     local_required_expense: int | None = None
+    guide_fee_currency: str | None = None
+    guide_fee_adult: int | None = None
+    guide_fee_child: int | None = None
+    guide_fee_infant: int | None = None
     meeting_time: str | None = None
     meeting_place_text: str = ""
     meeting_info_text: str = ""
@@ -121,10 +130,12 @@ class NormalizedProduct(BaseModel):
     traveler_insurance_text: str = ""
     expected_tour_mileage_text: str = ""
     display_price_adult: int | None = None
+    before_discount_price_adult: int | None = None
     selling_price_adult: int | None = None
     selling_price_child_no_bed: int | None = None
     selling_price_child_extra_bed: int | None = None
     selling_price_infant: int | None = None
+    selling_price_local_join: int | None = None
     special_benefits: list[str] = Field(default_factory=list)
     product_point_text: str = ""
     product_point_items: list[str] = Field(default_factory=list)
@@ -288,11 +299,28 @@ class DeterministicResults(BaseModel):
 class ProductSummary(BaseModel):
     product_no: str
     product_code: str | None = None
+    computed_product_code: str | None = None
     title: str
+    prefixes: list[str] = Field(default_factory=list)
+    themes: list[dict[str, str]] = Field(default_factory=list)
+    group_brief_keywords: list[str] = Field(default_factory=list)
+    travel_period_text: str | None = None
     departure_date: str | None = None
     arrival_date: str | None = None
     nights: int | None = None
     days: int | None = None
+    departure_airline_name: str | None = None
+    return_airline_name: str | None = None
+    departure_flight: str | None = None
+    return_flight: str | None = None
+    visit_cities: list[str] = Field(default_factory=list)
+    shopping_count: int | None = None
+    optional_tour_or_not: str | None = None
+    guide_yn: str | None = None
+    leader_yn: str | None = None
+    guide_fee: dict[str, int | str | None] = Field(default_factory=dict)
+    meeting_time: str | None = None
+    meeting_place_text: str = ""
     prices: dict[str, int | None] = Field(default_factory=dict)
 
 
